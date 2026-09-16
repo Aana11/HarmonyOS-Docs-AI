@@ -1,0 +1,276 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hds-visual-component
+title: HdsVisualComponent (视效组件)
+breadcrumb: API参考 > 应用框架 > UI Design Kit（UI设计套件） > ArkTS组件 > HdsVisualComponent (视效组件)
+category: harmonyos-references
+scraped_at: 2026-09-15T07:06:16+08:00
+doc_updated_at: 2026-08-29
+content_hash: sha256:9b928d4a24fbf6cf0ed16ad7c43f84a8d2dbf5f69de8b4c78538517319394501
+---
+
+HdsVisualComponent组件承载复杂视效实现，应用开发者通过HdsVisualComponent选择具体视效场景完成复杂视效的开发。
+
+**起始版本：** 6.0.0(20)
+
+## 导入模块
+
+**说明** 
+
+* HdsVisualComponentAttribute是用于配置HdsVisualComponent组件属性的关键接口。6.0.1(21)及之前版本，导入HdsVisualComponent组件后需要开发者手动导入HdsVisualComponentAttribute，否则会编译报错。从6.0.2(22)版本开始，编译工具链识别到导入HdsVisualComponent组件后，会自动导入HdsVisualComponentAttribute，无需开发者手动导入。
+* 如果开发者手动导入HdsVisualComponentAttribute，DevEco Studio会显示置灰，6.0.1(21)及之前版本删除会编译报错，从6.0.2(22)版本开始，删除对功能无影响。
+
+6.0.1(21)及之前版本：
+
+```typescript
+import { HdsVisualComponent, HdsVisualComponentAttribute, HdsSceneController, HdsSceneType, hdsEffect } from '@kit.UIDesignKit';
+```
+
+6.0.2(22)及之后版本：
+
+```typescript
+import { HdsVisualComponent, HdsSceneController, HdsSceneType, hdsEffect } from '@kit.UIDesignKit';
+```
+
+## 子组件
+
+无
+
+## 接口
+
+HdsVisualComponent()
+
+创建HdsVisualComponent通用视效组件。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**卡片能力：** 从6.0.2(22)开始，该接口支持在ArkTS卡片中使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+## 属性
+
+除支持[通用属性](ts-component-general-attributes.md)，还支持以下属性：
+
+### scene
+
+scene(sceneType: HdsSceneType, controller: HdsSceneController, callback?: HdsSceneFinishCallback, frameRateRange?: hdsEffect.ExpectedFrameRateRange)
+
+设置视效场景
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**卡片能力：** 从6.0.2(22)开始，该接口支持在ArkTS卡片中使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| sceneType | [HdsSceneType](ui-design-hds-visual-component.md#hdsscenetype) | 是 | 视效场景类型。 |
+| controller | [HdsSceneController](ui-design-hds-visual-component.md#hdsscenecontroller) | 是 | 视效场景控制器。 |
+| callback | [HdsSceneFinishCallback](ui-design-hds-visual-component.md#hdsscenefinishcallback) | 否 | 视效场景结束时触发的回调。 |
+| frameRateRange | hdsEffect.[ExpectedFrameRateRange](ui-design-hdseffect.md#expectedframeraterange) | 否 | 视效场景帧率配置。 |
+
+## 事件
+
+支持[通用事件](ts-component-general-events.md)。
+
+## HdsSceneType
+
+视效场景。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+| 名称 | 值 | **说明** |
+| --- | --- | --- |
+| DUAL\_EDGE\_FLOW\_LIGHT\_WITH\_BACKGROUND\_MASK | 0 | 自带背景的双边流光。  **说明**：该场景在TV中无效果，在其他设备类型中可正常显示。 |
+
+## HdsSceneFinishCallback
+
+type HdsSceneFinishCallback = () => void
+
+场景视效结束回调函数。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**卡片能力：** 从6.0.2(22)开始，该接口支持在ArkTS卡片中使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+## HdsSceneController
+
+场景控制器。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**卡片能力：** 从6.0.2(22)开始，该接口支持在ArkTS卡片中使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+### constructor
+
+constructor()
+
+HdsSceneController的构造函数。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**卡片能力：** 从6.0.2(22)开始，该接口支持在ArkTS卡片中使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+### start
+
+start(): void
+
+开始视效场景。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+### pause
+
+pause(): void
+
+暂停视效场景。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+### resume
+
+resume(): void
+
+恢复视效场景。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+### stop
+
+stop(): void
+
+停止视效场景。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+### setSceneParams
+
+setSceneParams(params: SceneParams): HdsSceneController
+
+设置场景参数。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+**参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| params | [SceneParams](ui-design-hds-visual-component.md#sceneparams) | 是 | 场景参数。 |
+
+**返回值：**
+
+| 类型 | 说明 |
+| --- | --- |
+| [HdsSceneController](ui-design-hds-visual-component.md#hdsscenecontroller) | 返回[HdsSceneController](ui-design-hds-visual-component.md#hdsscenecontroller)对象。 |
+
+## SceneParams
+
+type SceneParams = DualEdgeFlowLightWithMaskParam
+
+场景视效参数。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+| 类型 | 说明 |
+| --- | --- |
+| [DualEdgeFlowLightWithMaskParam](ui-design-hds-visual-component.md#dualedgeflowlightwithmaskparam) | 双边边缘流光视效参数。 |
+
+## DualEdgeFlowLightWithMaskParam
+
+双边边缘流光视效参数。
+
+**模型约束：** 此接口仅可在Stage模型下使用。
+
+**系统能力：** SystemCapability.UIDesign.HDSComponent.Core
+
+**起始版本：** 6.0.0(20)
+
+| **名称** | **类型** | 只读 | 可选 | **说明** |
+| --- | --- | --- | --- | --- |
+| backgroundMaskColors | Array<[ResourceColor](ts-types.md#resourcecolor)> | 否 | 否 | 背景蒙层颜色数组。 |
+| firstEdgeFlowLight | hdsEffect.[EdgeFlowLightParam](ui-design-hdseffect.md#edgeflowlightparam) | 否 | 否 | 第一条流光参数配置。 |
+| secondEdgeFlowLight | hdsEffect.[EdgeFlowLightParam](ui-design-hdseffect.md#edgeflowlightparam) | 否 | 否 | 第二条流光参数配置。 |
+
+## 示例
+
+```typescript
+// 从6.0.2(22)版本开始，无需手动导入HdsVisualComponentAttribute。具体请参考HdsVisualComponent的导入模块说明。
+import { HdsVisualComponent, HdsVisualComponentAttribute, HdsSceneController, HdsSceneType } from '@kit.UIDesignKit';
+
+@Entry
+@Component
+struct EdgeFlowLightVisualComponent {
+  @State sceneController: HdsSceneController = new HdsSceneController()
+    .setSceneParams({
+      backgroundMaskColors: [Color.Green, Color.Red],
+      firstEdgeFlowLight: {
+        startPos: 0,
+        endPos: 0.5,
+        color: Color.Red
+      },
+      secondEdgeFlowLight: {
+        startPos: 0,
+        endPos: -0.5,
+        color: Color.Green
+      }
+    })
+
+  build() {
+    Stack() {
+      HdsVisualComponent()
+        .scene(HdsSceneType.DUAL_EDGE_FLOW_LIGHT_WITH_BACKGROUND_MASK, this.sceneController, () => {
+          console.info('Succeeded in finishing');
+        })
+        .width('100%')
+        .height('50%')
+    }
+  }
+}
+```
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/b2/v3/s7f21yqVShGY61aVk2-JwQ/zh-cn_image_0000002723697874.gif)

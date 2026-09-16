@@ -1,0 +1,113 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/create-parse-verify-cert-object
+title: 证书对象的创建、解析和校验
+breadcrumb: 指南 > 系统 > 安全 > Device Certificate Kit（设备证书服务） > 证书算法库框架 > 证书对象的创建、解析和校验
+category: harmonyos-guides
+scraped_at: 2026-09-10T06:22:27+08:00
+doc_updated_at: 2026-09-09
+content_hash: sha256:d113ee106cb42da1a19a2c2f267bfe986b1c61b09db2170eba013c845a9a5b26
+---
+
+以校验证书有效性为例，完成证书对象的创建、解析和校验。
+
+## 开发步骤
+
+1. 导入[证书模块](../harmonyos-references/js-apis-cert.md)。
+
+   ```ts
+   import { cert } from '@kit.DeviceCertificateKit';
+   ```
+2. 基于已有的X.509证书数据，调用[cert.createX509Cert](../harmonyos-references/js-apis-cert.md#certcreatex509cert)创建证书对象。
+3. 解析证书的字段信息。
+
+   此处以获取证书版本、证书序列号、证书颁发者名称、证书主体名称、证书对象的字符串类型数据为例，更多字段信息获取接口请查看API参考文档[X509Cert](../harmonyos-references/js-apis-cert.md#x509cert)。
+4. 调用[X509Cert.getPublicKey](../harmonyos-references/js-apis-cert.md#getpublickey)获取证书中的公钥，并调用[X509Cert.verify](../harmonyos-references/js-apis-cert.md#verify)校验签名。示例为自验签场景，因此获取的是本证书中的公钥。应用须结合自身场景获取用于验签的公钥。
+5. 调用[X509Cert.checkValidityWithDate](../harmonyos-references/js-apis-cert.md#checkvaliditywithdate)校验证书有效期。入参date用于确认此日期是否在X.509证书有效期内。
+
+```typescript
+import { cert } from '@kit.DeviceCertificateKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { util } from '@kit.ArkTS';
+
+// 此处仅为示例的证书二进制数据，需根据业务的不同对证书数据进行赋值。
+let certData = '-----BEGIN CERTIFICATE-----\n' +
+  'MIIBLzCB1QIUO/QDVJwZLIpeJyPjyTvE43xvE5cwCgYIKoZIzj0EAwIwGjEYMBYG\n' +
+  'A1UEAwwPRXhhbXBsZSBSb290IENBMB4XDTIzMDkwNDExMjAxOVoXDTI2MDUzMDEx\n' +
+  'MjAxOVowGjEYMBYGA1UEAwwPRXhhbXBsZSBSb290IENBMFkwEwYHKoZIzj0CAQYI\n' +
+  'KoZIzj0DAQcDQgAEHjG74yMIueO7z3T+dyuEIrhxTg2fqgeNB3SGfsIXlsiUfLTa\n' +
+  'tUsU0i/sePnrKglj2H8Abbx9PK0tsW/VgqwDIDAKBggqhkjOPQQDAgNJADBGAiEA\n' +
+  '0ce/fvA4tckNZeB865aOApKXKlBjiRlaiuq5mEEqvNACIQDPD9WyC21MXqPBuRUf\n' +
+  'BetUokslUfjT6+s/X4ByaxycAA==\n' +
+  '-----END CERTIFICATE-----\n';
+
+// 证书示例
+function certSample(): void {
+  let textEncoder = new util.TextEncoder();
+  let encodingBlob: cert.EncodingBlob = {
+    // 将证书数据从string类型转换成Uint8Array。
+    data: textEncoder.encodeInto(certData),
+    // 证书格式，仅支持PEM和DER。在此示例中，证书为PEM格式。
+    encodingFormat: cert.EncodingFormat.FORMAT_PEM
+  };
+
+  // 创建X509Cert实例。
+  cert.createX509Cert(encodingBlob, (err, x509Cert) => {
+    if (err != null) {
+      // 创建X509Cert实例失败。
+      console.error(`createX509Cert failed, errCode:${err.code}, errMsg:${err.message}`);
+      return;
+    }
+    // X509Cert实例创建成功。
+    console.info('createX509Cert result: success.');
+
+    // 获取证书版本。
+    let version = x509Cert.getVersion();
+    // 获取证书序列号。
+    let serial = x509Cert.getCertSerialNumber();
+    console.info(`X509 version: ${version} , X509 serial:${serial}`);
+
+    // 获取证书颁发者名称。
+    let issuerName = x509Cert.getIssuerName(cert.EncodingType.ENCODING_UTF8);
+    console.info(`X509 issuerName: ${issuerName}`);
+
+    // 获取证书主体名称。
+    let subjectNameBin = x509Cert.getSubjectName(cert.EncodingType.ENCODING_UTF8);
+    let encoder = util.TextDecoder.create();
+    let subjectName = encoder.decodeToString(subjectNameBin.data);
+    console.info(`X509 subjectName: ${subjectName}`);
+
+    // 获取证书对象的字符串类型数据。
+    let certString = x509Cert.toString(cert.EncodingType.ENCODING_UTF8);
+    console.info(`X509 certString: ${certString}`);
+
+    // 使用上级证书对象的getPublicKey()方法或本（自签名）证书对象获取公钥对象。
+    try {
+      let pubKey = x509Cert.getPublicKey();
+      // 验证证书签名。
+      x509Cert.verify(pubKey, (err, _result) => {
+        if (err == null) {
+          // 签名验证成功。
+          console.info('verify result: success.');
+        } else {
+          // 签名验证失败。
+          console.error(`verify failed, errCode: ${err.code} , errMsg:${err.message}`);
+        }
+      });
+    } catch (error) {
+      let e: BusinessError = error as BusinessError;
+      console.error(`getPublicKey failed, errCode: ${e.code} , errMsg:${e.message}`);
+    }
+
+    // 用一个字符串代表时间。
+    let date = '20230930000001Z';
+
+    // 验证证书的有效期。
+    try {
+      x509Cert.checkValidityWithDate(date);
+    } catch (error) {
+      let e: BusinessError = error as BusinessError;
+      console.error(`checkValidityWithDate failed, errCode: ${e.code}, errMsg:${e.message}`);
+    }
+  });
+}
+```

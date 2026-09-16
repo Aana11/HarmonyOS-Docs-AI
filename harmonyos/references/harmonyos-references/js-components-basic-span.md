@@ -1,0 +1,85 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-components-basic-span
+title: span
+breadcrumb: API参考 > 应用框架 > ArkUI（方舟UI框架） > JS组件 > 兼容JS的类Web开发范式（ArkUI.Full） > 基础组件 > span
+category: harmonyos-references
+scraped_at: 2026-09-15T07:05:20+08:00
+doc_updated_at: 2026-08-29
+content_hash: sha256:56c7e8ecf191c46bdeed5bbb79b6e365b25904c0154c37e9ce3c135ab3ccc622
+---
+
+**说明** 
+
+从API version 4开始支持。后续版本如有新增内容，则采用上角标单独标记该内容的起始版本。
+
+作为<[text](js-components-basic-text.md)>子组件提供文本修饰能力。
+
+## 权限列表
+
+无
+
+## 子组件
+
+无
+
+## 属性
+
+支持[通用属性](js-components-common-attributes.md)。
+
+**说明** 
+
+不支持focusable和disabled属性。
+
+## 样式
+
+仅支持如下样式：
+
+| 名称 | 类型 | 默认值 | 必填 | 描述 |
+| --- | --- | --- | --- | --- |
+| color | <color> | - | 否 | 设置文本段落的文本颜色。 |
+| font-size | <length> | 30px | 否 | 设置文本段落的文本尺寸。 |
+| allow-scale | boolean | true | 否 | 设置文本段落的文本尺寸是否跟随系统设置字体缩放尺寸进行放大缩小。true表示跟随系统放大缩小，false表示不跟随系统放大缩小。  如果在config描述文件中针对ability配置了fontSize的config-changes标签，则应用不会重启而直接生效。 |
+| font-style | string | normal | 否 | 设置文本段落的字体样式，见[text组件font-style的样式属性](js-components-basic-text.md#样式)。 |
+| font-weight | number | string | normal | 否 | 设置文本段落的字体粗细，见[text组件font-weight的样式属性](js-components-basic-text.md#样式)。 |
+| text-decoration | string | none | 否 | 设置文本段落的文本修饰，见[text组件text-decoration样式属性](js-components-basic-text.md#样式)。 |
+| font-family | string | sans-serif | 否 | 设置文本段落的字体列表，用逗号分隔，每个字体用字体名或者字体族名设置。列表中第一个系统中存在的或者通过[自定义字体](js-components-common-customizing-font.md)指定的字体，会被选中作为文本的字体。 |
+
+## 事件
+
+仅支持[通用事件](js-components-common-events.md)中的click事件。
+
+## 方法
+
+不支持。
+
+## 示例
+
+```html
+<!-- xxx.hml -->
+<div class="container">
+  <text class="title">
+    <span class="spanTxt">span</span>
+  </text>
+</div>
+```
+
+```css
+/* xxx.css */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.title {
+  font-size: 30px;
+  text-align: center;
+  width: 100%;
+  height: 100px;
+}
+.spanTxt{
+  color: chartreuse;
+  font-size: 80px;
+}
+```
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/96/v3/UFY_KlSyTbud1HQI3WGEgQ/zh-cn_image_0000002723697542.png)

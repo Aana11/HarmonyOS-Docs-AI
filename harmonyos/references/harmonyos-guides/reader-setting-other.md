@@ -1,0 +1,46 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/reader-setting-other
+title: 修改翻页方式、字体大小及行间距
+breadcrumb: 指南 > 应用服务 > Reader Kit（阅读服务） > 书籍内容排版 > 修改阅读设置 > 修改翻页方式、字体大小及行间距
+category: harmonyos-guides
+scraped_at: 2026-09-10T06:23:28+08:00
+doc_updated_at: 2026-09-09
+content_hash: sha256:ec2a10fdb194e86bb1cae9244430ead2025c1633ecbfaa6aa828cea3d41b88a4
+---
+
+当应用需要支持修改默认的翻页方式、字体大小、行间距时，开发者可通过[ReaderSetting](../harmonyos-references/reader-read-core.md#readersetting)的flipMode、fontSize、lineHeight属性，实现对翻页方式、字体大小、行间距的实时修改。
+
+## 接口说明
+
+修改翻页方式、字体大小及行间距主要涉及1个接口，具体介绍如下表所示。
+
+| 接口名 | 描述 |
+| --- | --- |
+| [setPageConfig](../harmonyos-references/reader-read-core.md#setpageconfig)(pageConfig: ReaderSetting): void | 设置或者修改页面排版属性。 |
+
+## 开发准备
+
+在修改翻页方式、字体大小及行间距之前，请先确保已经“[构建阅读器](reader-read-page.md)”。
+
+## 开发步骤
+
+1. 修改翻页方式。
+
+   ```typescript
+   this.readerSetting.flipMode = '1'; // 0代表仿真翻页，1代表横滑翻页
+   ```
+2. 修改字体大小。
+
+   ```typescript
+   this.readerSetting.fontSize = 20;
+   ```
+3. 修改行间距。
+
+   ```typescript
+   this.readerSetting.lineHeight = 2;
+   ```
+4. 调用ReaderComponentController组件控制器的setPageConfig接口，重新渲染界面。
+
+   ```typescript
+   this.readerComponentController.setPageConfig(this.readerSetting);
+   ```

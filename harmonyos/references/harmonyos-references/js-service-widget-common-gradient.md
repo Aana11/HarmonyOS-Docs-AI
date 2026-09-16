@@ -1,0 +1,84 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-service-widget-common-gradient
+title: 渐变样式
+breadcrumb: API参考 > 应用框架 > ArkUI（方舟UI框架） > JS组件 > JS服务卡片UI组件 > 组件通用信息 > 渐变样式
+category: harmonyos-references
+scraped_at: 2026-09-15T07:05:24+08:00
+doc_updated_at: 2026-08-29
+content_hash: sha256:a57e3951e27ccd2c990f4cf25446fbb24724506080db5c3d7e6486ff4cb71306
+---
+
+组件普遍支持在style或css中设置渐变样式，可以平稳过渡两个或多个指定的颜色。
+
+**说明** 
+
+从API version 8开始支持。后续版本如有新增内容，则采用上角标单独标记该内容的起始版本。
+
+开发框架支持线性渐变 (linear-gradient)和重复线性渐变 (repeating-linear-gradient)两种渐变效果。
+
+## 线性渐变/重复线性渐变
+
+使用渐变样式，需要定义过渡方向和过渡颜色。
+
+### 过渡方向
+
+通过direction或者angle指定过渡方向。
+
+* direction：进行方向渐变。
+* angle：进行角度渐变。
+
+```css
+background: linear-gradient(direction/angle, color, color, ...);
+background: repeating-linear-gradient(direction/angle, color, color, ...);
+```
+
+### 过渡颜色
+
+支持以下四种方式：#ff0000、#ffff0000、rgb(255, 0, 0)、rgba(255, 0, 0, 1)，需要指定至少两种颜色。
+
+**参数：**
+
+| 名称 | 类型 | 默认值 | 必填 | 描述 |
+| --- | --- | --- | --- | --- |
+| direction | to <side-or-corner> <side-or-corner> = [left | right] || [top | bottom] | to bottom (由上到下渐变) | 否 | 指定过渡方向，如：to left (从右向左渐变) ，或者to bottom right (从左上角到右下角)。 |
+| angle | <deg> | 180deg | 否 | 指定过渡方向，以元素几何中心为坐标原点，水平方向为X轴，angle指定了渐变线与Y轴的夹角(顺时针方向)。 |
+| color | <color> [<length>|<percentage>] | - | 是 | 定义使用渐变样式区域内颜色的渐变效果。 |
+
+**示例：**
+
+1. 默认渐变方向为从上向下渐变。
+
+   ```css
+   #gradient {
+     height: 300px;
+     width: 600px;
+     /* 从顶部开始向底部由红色向绿色渐变 */
+     background: linear-gradient(red, #00ff00);
+   }
+   ```
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/2b/v3/x8yObbIpQYuoT0q-XUwiBg/zh-cn_image_0000002753457447.png)
+2. 45度夹角渐变。
+
+   ```css
+   /* 45度夹角，从红色渐变到绿色 */
+   background: linear-gradient(45deg, rgb(255, 0, 0),rgb(0, 255, 0));
+   ```
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/3/v3/4e78EXXtSxaZf-FFzA1P0g/zh-cn_image_0000002723857682.png)
+3. 设置方向从左向右渐变。
+
+   ```css
+   /* 从左向右渐变，在距离左边90px和距离左边360px (600*0.6) 之间270px宽度形成渐变 */
+   background: linear-gradient(to right, rgb(255, 0, 0) 90px, rgb(0, 255, 0) 60%);
+   ```
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/ba/v3/zhI0P4Z_SGaeG_BtnHWgqA/zh-cn_image_0000002723697764.png)
+4. 重复渐变。
+
+   ```css
+   /* 从左向右重复渐变，重复渐变区域30vp（60-30）透明度0.5 */
+   background: repeating-linear-gradient(to right, rgba(255, 255, 0, 1) 30vp,rgba(0, 0, 255, .5) 60vp);
+   ```
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/fc/v3/B93uu_WDS6C7RygFS_a-0g/zh-cn_image_0000002753297531.png)

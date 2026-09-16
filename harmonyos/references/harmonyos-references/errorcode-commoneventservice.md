@@ -1,0 +1,194 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-references/errorcode-commoneventservice
+title: 公共事件错误码
+breadcrumb: API参考 > 系统 > 基础功能 > Basic Services Kit（基础服务） > 错误码 > 公共事件错误码
+category: harmonyos-references
+scraped_at: 2026-09-02T15:02:06+08:00
+doc_updated_at: 2026-08-29
+content_hash: sha256:1c826e6b973b5c3c2a139a9ece6019b8f1a4afdf19351d5d3392445376769de6
+---
+
+**说明** 
+
+以下仅介绍本模块特有错误码，通用错误码请参考[通用错误码说明文档](errorcode-universal.md)。
+
+## 1500001 want中Action为空
+
+**错误信息**
+
+The action field in the want parameter is null.
+
+**错误描述**
+
+发送公共事件的want中的action属性为空时系统会产生此错误码。
+
+**可能原因**
+
+发送公共事件的want中的action属性为空。
+
+**处理步骤**
+
+检查传入want的action属性是否为空。
+
+## 1500002 沙箱应用无法发送公共事件
+
+**错误信息**
+
+A sandbox application cannot send common events.
+
+**错误描述**
+
+沙箱应用无法发送公共事件。
+
+**可能原因**
+
+公共事件发送方应用为沙箱应用，发送公共事件会被拦截。
+
+**处理步骤**
+
+确认发送公共事件的应用是否为沙箱应用。
+
+## 1500003 公共事件发送频率过高
+
+**错误信息**
+
+The common event sending frequency too high.
+
+**错误描述**
+
+应用发送公共事件的频率超过系统限制。
+
+**可能原因**
+
+发送公共事件频率超过每5毫秒20个，触发系统频率限制。
+
+**处理步骤**
+
+检查应用是否过于频繁地发送公共事件，如发送频率超过每5毫秒20个，请降低公共事件发送频率或增加发送间隔后重新尝试。
+
+## 1500004 无法发送系统公共事件
+
+**错误信息**
+
+A third-party application cannot send system common events.
+
+**错误描述**
+
+第三方应用无法发送[系统公共事件](../harmonyos-guides/common-event-glossary.md#system-common-event系统公共事件)。
+
+**可能原因**
+
+非系统应用或非系统服务发送系统公共事件。
+
+**处理步骤**
+
+确认当前应用是否为系统应用，或当前服务是否为系统服务。
+
+## 1500005 未找到订阅者
+
+**错误信息**
+
+The subscriber is not found.
+
+**错误描述**
+
+找不到订阅者。
+
+**可能原因**
+
+订阅者已取消订阅被系统删除。
+
+**处理步骤**
+
+检查是否有重复取消订阅。
+
+## 1500006 无效userId
+
+**错误信息**
+
+Invalid userId.
+
+**错误描述**
+
+无效的userId。
+
+**可能原因**
+
+和系统userId不一致或不是系统应用或系统服务进程。
+
+**处理步骤**
+
+1. 检查当前userId是否和系统userId一致。
+2. 检查当前应用是否为系统应用或系统服务。
+
+## 1500007 IPC请求发送失败
+
+**错误信息**
+
+Failed to send the message to the common event service.
+
+**错误描述**
+
+IPC发送请求失败。
+
+**可能原因**
+
+短时间内频繁建立IPC连接导致系统资源紧张，未能成功创建连接对象。
+
+**处理步骤**
+
+请勿频繁建立连接，稍后重新尝试。
+
+## 1500008 公共事件服务端初始化失败
+
+**错误信息**
+
+Failed to initialize the common event service.
+
+**错误描述**
+
+[公共事件服务](../harmonyos-guides/common-event-glossary.md#common-event-service-ces公共事件服务)端在初始化过程中发生错误。
+
+**可能原因**
+
+服务端初始化处理数据时发现业务异常。
+
+**处理步骤**
+
+稍后重新尝试。
+
+## 1500009 获取系统参数失败
+
+**错误信息**
+
+Failed to obtain system parameters.
+
+**错误描述**
+
+处理业务时系统发生异常，如获取系统当前时间失败。
+
+**可能原因**
+
+系统故障，获取系统当前时间发生异常。
+
+**处理步骤**
+
+稍后重新尝试。
+
+## 1500010 订阅者数量超限
+
+**错误信息**
+
+The count of subscriber exceed system specification.
+
+**错误描述**
+
+订阅者数量超过进程内最大限制。
+
+**可能原因**
+
+订阅者不再使用时未取消订阅。公共事件限制每个进程最多订阅200个订阅者，进程内所有业务共享订阅者数量。
+
+**处理步骤**
+
+检查应用内是否存在订阅者未取消订阅，如存在则取消订阅后重新尝试；不存在请稍后重新尝试。

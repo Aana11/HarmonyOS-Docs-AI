@@ -1,0 +1,16 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/image-kit
+title: Image Kit（图片处理服务）
+breadcrumb: 指南 > 媒体 > Image Kit（图片处理服务）
+category: harmonyos-guides
+scraped_at: 2026-09-15T07:02:23+08:00
+doc_updated_at: 2026-09-14
+content_hash: sha256:bbdb333f9a79e689f2b830d066847139f282c242ffcf1a7354a8cb39726c0e54
+---
+
+* **[Image Kit简介](image-overview.md)**
+* **[图片开发指导(ArkTS)](image-arkts-dev.md)**
+* **[图片开发指导(C/C++)](image-native.md)**
+* **[Image Kit常见问题](image-faqs.md)**
+* **[图片开发指导(依赖JS对象)(不再推荐)](image-native-js-objects.md)**
+* **[Image Kit术语](image-glossary.md)**

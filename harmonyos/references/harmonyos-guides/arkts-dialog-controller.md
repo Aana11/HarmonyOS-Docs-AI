@@ -1,0 +1,478 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-dialog-controller
+title: 弹出框控制器
+breadcrumb: 指南 > 应用框架 > ArkUI（方舟UI框架） > UI开发 (ArkTS声明式开发范式) > 使用弹窗 > 弹出框 (Dialog) > 弹出框控制器
+category: harmonyos-guides
+scraped_at: 2026-09-15T07:01:26+08:00
+doc_updated_at: 2026-09-09
+content_hash: sha256:1cd484b032effc0342660598cfa489d4e242ca81678a3f25075245ab13dfa28f
+---
+
+ArkUI的弹出框控制器在绑定弹出框后，可提供对弹出框的操作能力，当前支持关闭功能。可以将控制器传入弹出框内容区域后进行操作。
+
+从API version 18开始，可设置controller参数以绑定[DialogController](../harmonyos-references/js-apis-promptaction.md#dialogcontroller18)控制器，通过控制器能够操作弹出框。
+
+## 使用约束
+
+目前[openCustomDialogWithController](../harmonyos-references/arkts-apis-uicontext-promptaction.md#opencustomdialogwithcontroller18)和[presentCustomDialog](../harmonyos-references/arkts-apis-uicontext-promptaction.md#presentcustomdialog18)支持通过controller参数来绑定弹出框进行操作，[getDialogController](../harmonyos-references/ts-custom-component-api.md#getdialogcontroller18)支持获取自定义组件所在的弹出框的控制器。
+
+**说明** 
+
+一个弹出框控制器只能绑定一个弹出框，且操作只对该弹出框生效。
+
+使用[getDialogController](../harmonyos-references/ts-custom-component-api.md#getdialogcontroller18)获取弹出框控制器时，如果当前自定义组件不在弹出框中显示则获取为undefined。
+
+## 创建自定义内容为ComponentContent的弹出框控制器
+
+**说明** 
+
+详细变量定义请参考[完整示例](arkts-dialog-controller.md#完整示例)。
+
+1. 初始化一个自定义弹出框内容区的入参类，内部包含弹出框控制器。
+
+   ```typescript
+   class Params {
+     public text: string = '';
+     public dialogController: promptAction.CommonController = new promptAction.DialogController();
+
+     constructor(text: string, dialogController: promptAction.CommonController) {
+       this.text = text;
+       this.dialogController = dialogController;
+     }
+   }
+   ```
+2. 初始化一个自定义的弹出框内容区，内部包含一个按钮，该按钮通过该自定义组件自带的弹出框控制器实现关闭功能。
+
+   ```typescript
+   @Component
+   struct MyComponent {
+     build() {
+       Column({ space: 5 }) {
+         Button('Close Dialog(Built-in Controller)')
+           .onClick(() => {
+             let dialogController: promptAction.DialogController = this.getDialogController();
+             if (dialogController !== undefined) {
+               dialogController.close();
+             }
+           })
+       }
+     }
+   }
+   ```
+3. 初始化另一自定义弹出框内容区，其中包含一个Text组件和一个按钮，该按钮通过外部传递的弹出框控制器用于关闭弹出框，并且该内容区还包含前一个自定义弹出框内容区。
+
+   ```typescript
+   @Builder
+   function buildText(params: Params) {
+     Column({ space: 5 }) {
+       Text(params.text)
+         .fontSize(30)
+       if (params.dialogController !== undefined) {
+         Button('Close Dialog(External Controller)')
+           .onClick(() => {
+             params.dialogController.close();
+           })
+       }
+       MyComponent()
+     }
+     .width(300)
+     .height(200)
+     .backgroundColor('#FFF0F0F0')
+   }
+   ```
+4. 初始化一个弹出框控制器，并通过设置控制器参数来初始化一个弹出框内容实体对象。最后，通过调用[UIContext](../harmonyos-references/arkts-apis-uicontext-uicontext.md)中的[getPromptAction](../harmonyos-references/arkts-apis-uicontext-uicontext.md#getpromptaction)方法获取[PromptAction](../harmonyos-references/arkts-apis-uicontext-promptaction.md)对象，再通过该对象调用[openCustomDialogWithController](../harmonyos-references/arkts-apis-uicontext-promptaction.md#opencustomdialogwithcontroller18)接口，并且设置初始化的内容实体对象和控制器参数以创建弹出框。
+
+   ```typescript
+   let dialogController: promptAction.CommonController = new promptAction.DialogController();
+   let contentNode: ComponentContent<Object> =
+     new ComponentContent(this.getUIContext(), wrapBuilder(buildText),
+       new Params(this.message, dialogController));
+   this.getUIContext().getPromptAction().openCustomDialogWithController(
+     contentNode, dialogController, this.baseDialogOptions).catch((err: BusinessError) => {
+     hilog.error(DOMAIN, 'dialogController',
+       'openCustomDialogWithController error: ' + err.code + ' ' + err.message);
+   });
+   ```
+
+## 创建自定义内容为CustomBuilder的弹出框控制器
+
+**说明** 
+
+详细变量定义请参考[完整示例](arkts-dialog-controller.md#完整示例)。
+
+1. 初始化一个自定义弹出框内容区，内部包含一个Text组件和一个按钮，该按钮通过外部传递的弹出框控制器实现关闭功能。
+
+   ```typescript
+   @Builder
+   customDialogComponent(dialogController: promptAction.DialogController) {
+     Column({ space: 5 }) {
+       Text(this.message)
+         .fontSize(30)
+       if (dialogController !== undefined) {
+         Button('Close Dialog(External Controller)')
+           .onClick(() => {
+             dialogController.close();
+           })
+       }
+     }
+     .height(200)
+     .padding(5)
+     .justifyContent(FlexAlign.SpaceBetween)
+     .backgroundColor('#FFF0F0F0')
+   }
+   ```
+2. 初始化一个弹出框控制器，并通过调用[UIContext](../harmonyos-references/arkts-apis-uicontext-uicontext.md)中的[getPromptAction](../harmonyos-references/arkts-apis-uicontext-uicontext.md#getpromptaction)方法获取[PromptAction](../harmonyos-references/arkts-apis-uicontext-promptaction.md)对象，再通过该对象调用[presentCustomDialog](../harmonyos-references/arkts-apis-uicontext-promptaction.md#presentcustomdialog18)接口，设置初始化的内容实体对象和控制器参数以创建弹出框。
+
+   ```typescript
+   let dialogController: promptAction.CommonController = new promptAction.DialogController();
+   this.getUIContext().getPromptAction().presentCustomDialog(() => {
+     this.customDialogComponent(dialogController);
+   }, dialogController, this.dialogOptions).catch((err: BusinessError) => {
+     hilog.error(DOMAIN, 'dialogController', 'presentCustomDialog error: ' + err.code + ' ' + err.message);
+   });
+   ```
+
+## 创建自定义内容为CustomBuilderWithId的弹出框控制器
+
+**说明** 
+
+详细变量定义请参考[完整示例](arkts-dialog-controller.md#完整示例)。
+
+1. 初始化一个弹出框内容区，内部包含一个Text组件、一个通过外部传递的弹出框ID用于关闭弹出框的按钮和一个通过外部传递的弹出框控制器用于关闭弹出框的按钮。
+
+   ```typescript
+   @Builder
+   customDialogComponentWithId(dialogId: number, dialogController: promptAction.DialogController) {
+     Column({ space: 5 }) {
+       Text(this.message)
+         .fontSize(30)
+       if (dialogId !== undefined) {
+         Button('Close Dialog(DialogID)')
+           .onClick(() => {
+             this.getUIContext().getPromptAction().closeCustomDialog(dialogId);
+           })
+       }
+       if (dialogController !== undefined) {
+         Button('Close Dialog(External Controller)')
+           .onClick(() => {
+             dialogController.close();
+           })
+       }
+     }
+     .height(200)
+     .padding(5)
+     .justifyContent(FlexAlign.SpaceBetween)
+     .backgroundColor('#FFF0F0F0')
+   }
+   ```
+2. 初始化一个弹出框控制器，并通过调用[UIContext](../harmonyos-references/arkts-apis-uicontext-uicontext.md)中的[getPromptAction](../harmonyos-references/arkts-apis-uicontext-uicontext.md#getpromptaction)方法获取[PromptAction](../harmonyos-references/arkts-apis-uicontext-promptaction.md)对象，再通过该对象调用[presentCustomDialog](../harmonyos-references/arkts-apis-uicontext-promptaction.md#presentcustomdialog18)接口，设置初始化的内容实体对象和控制器参数以创建弹出框。
+
+   ```typescript
+   let dialogController: promptAction.CommonController = new promptAction.DialogController();
+   this.getUIContext().getPromptAction().presentCustomDialog((dialogId: number) => {
+     this.customDialogComponentWithId(dialogId, dialogController);
+   }, dialogController, this.dialogOptions).catch((err: BusinessError) => {
+     hilog.error(DOMAIN, 'dialogController', 'presentCustomDialog error: ' + err.code + ' ' + err.message);
+   });
+   ```
+
+## 在CustomDialogController内容区直接获取弹出框控制器
+
+**说明** 
+
+详细变量定义请参考[完整示例](arkts-dialog-controller.md#完整示例)。
+
+1. 初始化一个自定义弹出框内容区，内部包含一个Text组件和一个按钮，该按钮通过弹出框控制器关闭弹出框。
+
+   ```typescript
+   @CustomDialog
+   @Component
+   struct CustomDialogExample {
+     controller?: CustomDialogController;
+
+     build() {
+       Column({ space: 5 }) {
+         Text('I am content')
+           .fontSize(30)
+         Button('Close Dialog(Built-in Controller)')
+           .onClick(() => {
+             let dialogController: promptAction.DialogController = this.getDialogController();
+             if (dialogController !== undefined) {
+               dialogController.close();
+             }
+           })
+       }
+       .height(200)
+       .backgroundColor('#FFF0F0F0')
+     }
+   }
+   ```
+2. 初始化一个自定义弹出框构造器，关联自定义弹出框内容区。
+
+   ```typescript
+   let customDialogController: CustomDialogController = new CustomDialogController({
+     builder: CustomDialogExample(),
+     offset: {
+       dx: 0,
+       dy: 50
+     }
+   });
+   customDialogController.open();
+   ```
+
+## 使用控制器获取弹出框的状态
+
+在自定义弹出框场景中，从API version 20 开始，可以通过控制器调用[getState](../harmonyos-references/js-apis-promptaction.md#getstate20)接口获取弹出框状态。
+
+**说明** 
+
+详细变量定义请参考[完整示例](arkts-dialog-controller.md#完整示例)。
+
+初始化一个自定义弹出框内容区，内部包含一个Text组件和两个按钮，一个按钮通过调用getState获取当前弹出框状态，另一个按钮通过弹出框控制器关闭弹出框。
+
+```typescript
+@Builder
+customDialogComponentGetState(dialogController: promptAction.DialogController) {
+  Column({ space: 5 }) {
+    Text(this.message)
+      .fontSize(30)
+    if (dialogController !== undefined) {
+      Button('Check Status:' + this.dialogState)
+        .onClick(() => {
+          this.dialogState = dialogController.getState();
+        })
+      Button('Close Dialog(External Controller)')
+        .onClick(() => {
+          dialogController.close();
+        })
+    }
+  }
+  .height(200)
+  .padding(5)
+  .justifyContent(FlexAlign.SpaceBetween)
+  .backgroundColor('#FFF0F0F0')
+}
+```
+
+## 完整示例
+
+通过外部传递的弹出框控制器和自定义组件自带的弹出框控制器，在自定义弹出框内容区域内实现关闭功能。
+
+```typescript
+import { ComponentContent, promptAction } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const DOMAIN = 0x0000;
+
+class Params {
+  public text: string = '';
+  public dialogController: promptAction.CommonController = new promptAction.DialogController();
+
+  constructor(text: string, dialogController: promptAction.CommonController) {
+    this.text = text;
+    this.dialogController = dialogController;
+  }
+}
+
+@Component
+struct MyComponent {
+  build() {
+    Column({ space: 5 }) {
+      Button('Close Dialog(Built-in Controller)')
+        .onClick(() => {
+          let dialogController: promptAction.DialogController = this.getDialogController();
+          if (dialogController !== undefined) {
+            dialogController.close();
+          }
+        })
+    }
+  }
+}
+
+@Builder
+function buildText(params: Params) {
+  Column({ space: 5 }) {
+    Text(params.text)
+      .fontSize(30)
+    if (params.dialogController !== undefined) {
+      Button('Close Dialog(External Controller)')
+        .onClick(() => {
+          params.dialogController.close();
+        })
+    }
+    MyComponent()
+  }
+  .width(300)
+  .height(200)
+  .backgroundColor('#FFF0F0F0')
+}
+
+@CustomDialog
+@Component
+struct CustomDialogExample {
+  controller?: CustomDialogController;
+
+  build() {
+    Column({ space: 5 }) {
+      Text('I am content')
+        .fontSize(30)
+      Button('Close Dialog(Built-in Controller)')
+        .onClick(() => {
+          let dialogController: promptAction.DialogController = this.getDialogController();
+          if (dialogController !== undefined) {
+            dialogController.close();
+          }
+        })
+    }
+    .height(200)
+    .backgroundColor('#FFF0F0F0')
+  }
+}
+
+@Entry
+@Component
+export struct DialogController {
+  @State dialogState: promptAction.CommonState = 0;
+  private message = 'dialog';
+  private baseDialogOptions: promptAction.BaseDialogOptions = {
+    isModal: false,
+    autoCancel: false,
+    offset: {
+      dx: 0,
+      dy: 50
+    }
+  };
+  private dialogOptions: promptAction.DialogOptions = {
+    isModal: false,
+    autoCancel: false,
+    offset: {
+      dx: 0,
+      dy: 50
+    }
+  };
+
+  @Builder
+  customDialogComponent(dialogController: promptAction.DialogController) {
+    Column({ space: 5 }) {
+      Text(this.message)
+        .fontSize(30)
+      if (dialogController !== undefined) {
+        Button('Close Dialog(External Controller)')
+          .onClick(() => {
+            dialogController.close();
+          })
+      }
+    }
+    .height(200)
+    .padding(5)
+    .justifyContent(FlexAlign.SpaceBetween)
+    .backgroundColor('#FFF0F0F0')
+  }
+
+  @Builder
+  customDialogComponentWithId(dialogId: number, dialogController: promptAction.DialogController) {
+    Column({ space: 5 }) {
+      Text(this.message)
+        .fontSize(30)
+      if (dialogId !== undefined) {
+        Button('Close Dialog(DialogID)')
+          .onClick(() => {
+            this.getUIContext().getPromptAction().closeCustomDialog(dialogId);
+          })
+      }
+      if (dialogController !== undefined) {
+        Button('Close Dialog(External Controller)')
+          .onClick(() => {
+            dialogController.close();
+          })
+      }
+    }
+    .height(200)
+    .padding(5)
+    .justifyContent(FlexAlign.SpaceBetween)
+    .backgroundColor('#FFF0F0F0')
+  }
+
+  @Builder
+  customDialogComponentGetState(dialogController: promptAction.DialogController) {
+    Column({ space: 5 }) {
+      Text(this.message)
+        .fontSize(30)
+      if (dialogController !== undefined) {
+        Button('Check Status:' + this.dialogState)
+          .onClick(() => {
+            this.dialogState = dialogController.getState();
+          })
+        Button('Close Dialog(External Controller)')
+          .onClick(() => {
+            dialogController.close();
+          })
+      }
+    }
+    .height(200)
+    .padding(5)
+    .justifyContent(FlexAlign.SpaceBetween)
+    .backgroundColor('#FFF0F0F0')
+  }
+
+  build() {
+    NavDestination() {
+      Column({ space: 5 }) {
+        Button('OpenCustomDialogWithController')
+          .onClick(() => {
+            let dialogController: promptAction.CommonController = new promptAction.DialogController();
+            let contentNode: ComponentContent<Object> =
+              new ComponentContent(this.getUIContext(), wrapBuilder(buildText),
+                new Params(this.message, dialogController));
+            this.getUIContext().getPromptAction().openCustomDialogWithController(
+              contentNode, dialogController, this.baseDialogOptions).catch((err: BusinessError) => {
+              hilog.error(DOMAIN, 'dialogController',
+                'openCustomDialogWithController error: ' + err.code + ' ' + err.message);
+            });
+          })
+        Button('PresentCustomDialog+CustomBuilder')
+          .onClick(() => {
+            let dialogController: promptAction.CommonController = new promptAction.DialogController();
+            this.getUIContext().getPromptAction().presentCustomDialog(() => {
+              this.customDialogComponent(dialogController);
+            }, dialogController, this.dialogOptions).catch((err: BusinessError) => {
+              hilog.error(DOMAIN, 'dialogController', 'presentCustomDialog error: ' + err.code + ' ' + err.message);
+            });
+          })
+        Button('PresentCustomDialog+CustomBuilderWithId')
+          .onClick(() => {
+            let dialogController: promptAction.CommonController = new promptAction.DialogController();
+            this.getUIContext().getPromptAction().presentCustomDialog((dialogId: number) => {
+              this.customDialogComponentWithId(dialogId, dialogController);
+            }, dialogController, this.dialogOptions).catch((err: BusinessError) => {
+              hilog.error(DOMAIN, 'dialogController', 'presentCustomDialog error: ' + err.code + ' ' + err.message);
+            });
+          })
+        Button('PresentCustomDialog+CustomBuilderGetState')
+          .onClick(() => {
+            let dialogController: promptAction.CommonController = new promptAction.DialogController();
+            this.getUIContext().getPromptAction().presentCustomDialog(() => {
+              this.customDialogComponentGetState(dialogController);
+            }, dialogController, this.dialogOptions).catch((err: BusinessError) => {
+              hilog.error(DOMAIN, 'dialogController', 'presentCustomDialog error: ' + err.code + ' ' + err.message);
+            });
+          })
+        Button('CustomDialogController')
+          .onClick(() => {
+            let customDialogController: CustomDialogController = new CustomDialogController({
+              builder: CustomDialogExample(),
+              offset: {
+                dx: 0,
+                dy: 50
+              }
+            });
+            customDialogController.open();
+          })
+      }.width('100%')
+    }
+  }
+}
+```
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/ab/v3/f7ZrSJXLS4Gjaiu5lVSW4Q/zh-cn_image_0000002723694836.gif)

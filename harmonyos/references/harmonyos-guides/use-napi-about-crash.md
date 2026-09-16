@@ -1,0 +1,618 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/use-napi-about-crash
+title: 使用Node-API接口产生的异常日志/崩溃分析
+breadcrumb: 指南 > NDK开发 > 代码开发 > 使用Node-API实现ArkTS/JS与C/C++语言交互 > Node-API典型使用场景 > 使用Node-API接口产生的异常日志/崩溃分析
+category: harmonyos-guides
+scraped_at: 2026-09-02T15:00:16+08:00
+doc_updated_at: 2026-08-21
+content_hash: sha256:a629dec462c8a4251c5888f9b3409cc2ea5019e2cc52ded944353309d3a7b407
+---
+
+以下维测手段多数依赖于ArkTS运行时的多线程检测能力，因此建议在调试前启用此功能。启用方法参考文档[分析CppCrash（进程崩溃）](ide-multi-thread-check.md)。
+
+若无特殊说明，本章节描述的维测手段会在启用ArkTS运行时多线程检测开关的情况下，立即中断进程。
+
+## 数据在使用时，与创建该数据时所使用的env不一致
+
+### 各问题场景的关键日志
+
+该维测手段主要包含以下两种场景：
+
+1. 调用napi方法的入参napi\_env与创建napi数据结构时所使用的napi\_env不一致。
+
+   **关键日志**
+
+   param env not equal to its owner.
+2. 调用napi方法的入参napi\_env与创建napi数据结构时所使用的napi\_env一致，但原始napi\_env已释放。
+
+   **关键日志**
+
+   1. 除线程安全函数相关方法外，关键日志如下：
+
+      owner env has been destroyed, owner id: <owner id> , current env id: <current id>.
+   2. 线程安全函数相关方法，关键日志如下：
+
+      current tsfn was created by dead env, owner id: <owner id>, current env id: <current id>
+
+该维测手段当前的覆盖范围如下：
+
+1. napi\_get\_reference\_value
+2. napi\_delete\_reference\*
+3. napi\_queue\_async\_work
+4. napi\_queue\_async\_work\_with\_qos
+5. napi\_cancel\_async\_work
+6. napi\_call\_threadsafe\_function\*
+7. napi\_release\_threadsafe\_function\*
+
+具有\*标志的接口，仅能触发第二种场景的维测信息，不含有\*标志的接口，能触发以上两种场景的维测信息。
+
+### 案例及示例代码
+
+**注意** 
+
+下面的代码仅用于构造异常场景，触发异常分支的DFX日志。在充分理解其意图前，请勿将其应用到业务场景中。
+
+**基础工具类**
+
+定义一个工具类，便于在后续构造两种异常场景。
+
+```cpp
+#define CHECK(cond)                                                 \
+    do {                                                            \
+        if (!(cond)) {                                                 \
+            OH_LOG_FATAL(LOG_APP, "Failed to check `" #cond "`");   \
+            std::abort();                                           \
+        }                                                           \
+    } while(0)
+#define CHECK_EQ(lhs, rhs) CHECK(lhs == rhs)
+#define CHECK_NE(lhs, rhs) CHECK(lhs != rhs)
+#define CHECK_NOT_NULL(val) CHECK(val != nullptr)
+
+#define STRICT_NAPI_CALL(call)                                      \
+    do {                                                            \
+        napi_status ret = (call);                                   \
+        if (ret != napi_ok) {                                       \
+            OH_LOG_FATAL(LOG_APP, "Failed to execute `" #call "`, " \
+                "return code is: %{public}d", ret);                 \
+            std::abort();                                           \
+        }                                                           \
+    } while(0)
+
+class CallbackInfo {
+public:
+    CallbackInfo(napi_env env, napi_callback_info info)
+        : env_(env)
+    {
+        napi_get_cb_info(env, info, &argc_, nullptr, &thisVar_, &data_);
+        if (argc_ > 0) {
+            argv_ = new napi_value[argc_];
+            CHECK_NOT_NULL(argv_);
+            memset(argv_, 0, sizeof(argv_));
+            napi_get_cb_info(env, info, &argc_, argv_, nullptr, nullptr);
+        }
+    }
+    ~CallbackInfo()
+    {
+        if (argc_ > 0) {
+            delete[] argv_;
+            argv_ = nullptr;
+        }
+    }
+
+    inline size_t GetArgc() const { return argc_; }
+    inline napi_value* GetArgs() const { return argv_; }
+
+    inline napi_value GetArg(size_t index) const
+    {
+        if (index >= argc_) {
+            napi_value undefined = nullptr;
+            napi_get_undefined(env_, &undefined);
+            return undefined;
+        }
+        return argv_[index];
+    }
+    inline napi_value operator[](size_t index) const
+    {
+        return GetArg(index);
+    }
+
+private:
+    napi_env env_ { nullptr };
+    size_t argc_ { 0 };
+    napi_value* argv_ { nullptr };
+    napi_value thisVar_ { nullptr };
+    void* data_ { nullptr };
+};
+
+// 构造相同（或不同）地址的napi_env，以便能触发不同的DFX信息
+class EngineProxy {
+public:
+    EngineProxy()
+    {
+        STRICT_NAPI_CALL(napi_create_ark_runtime(&env_));
+        // 5: 使napi_env地址复用更容易
+        for (int i = 0; i < 5; i++) {
+            RecreateOnce();
+        }
+    }
+
+    ~EngineProxy()
+    {
+        STRICT_NAPI_CALL(napi_destroy_ark_runtime(&env_));
+    }
+
+    inline bool RecreateSame()
+    {
+        return Recreate(true);
+    }
+
+    inline bool RecreateDiff()
+    {
+        return Recreate(false);
+    }
+
+    inline operator napi_env() const
+    {
+        return env_;
+    }
+
+    // 重新创建napi_env，直到地址与原始env相同（或不同）
+    bool Recreate(bool requireSame)
+    {
+        const char* recreateTypeTag = requireSame ? "same" : "different";
+        napi_env old = env_;
+        for (int i = 0; i < MAX_RETRY_TIMES; i++) {
+            if (RecreateOnce(old) == requireSame) {
+                OH_LOG_INFO(LOG_APP, "Succeed to recreate env with %{public}s pointer "
+                    "address after retried %{public}d times.", recreateTypeTag, i);
+                return true;
+            }
+        }
+        OH_LOG_ERROR(LOG_APP, "Failed to recreate env with %{public}s pointer "
+            "address after retried %{public}d times.", recreateTypeTag, MAX_RETRY_TIMES);
+        return false;
+    }
+
+private:
+    // 重新创建napi_env，返回新地址是否与原地址相同
+    bool RecreateOnce(napi_env old = nullptr)
+    {
+        STRICT_NAPI_CALL(napi_destroy_ark_runtime(&env_));
+        STRICT_NAPI_CALL(napi_create_ark_runtime(&env_));
+        return env_ == old;
+    }
+
+    napi_env env_ {nullptr};
+    
+    constexpr static int MAX_RETRY_TIMES = 1 << 8;
+};
+```
+
+**napi\_ref相关接口**
+
+napi\_get\_reference\_value 和 napi\_delete\_reference 的示例代码
+
+```cpp
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXGetRef: (samePtr: boolean) => void;
+ */
+napi_value TriggerDFXGetRef(napi_env env, napi_callback_info cbinfo)
+{
+    CallbackInfo info(env, cbinfo);
+    bool same = true;
+    STRICT_NAPI_CALL(napi_get_value_bool(env, info[0], &same));
+    std::thread([](bool same) {
+        EngineProxy localEnv;
+        napi_value obj = nullptr;
+        STRICT_NAPI_CALL(napi_create_object(localEnv, &obj));
+        napi_ref ref = nullptr;
+        // napi_create_reference为js对象创建了强引用，需要使用napi_delete_reference主动销毁，否则会导致js对象无法被回收，造成内存泄漏
+        napi_create_reference(localEnv, obj, 1, &ref);
+        if (!localEnv.Recreate(same)) {
+            if (ref != nullptr) {
+                napi_delete_reference(localEnv, ref);
+            }
+            return;
+        }
+        napi_value result = nullptr;
+        napi_get_reference_value(localEnv, ref, &result);
+        if (ref != nullptr) {
+            napi_delete_reference(localEnv, ref);
+        }
+    }, same).detach();
+    return nullptr;
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXDelRef: () => void;
+ */
+napi_value TriggerDFXDelRef(napi_env, napi_callback_info info)
+{
+    std::thread([]() {
+        EngineProxy localEnv;
+        napi_value obj = nullptr;
+        STRICT_NAPI_CALL(napi_create_object(localEnv, &obj));
+        napi_ref ref = nullptr;
+        // 在使用完成后调用napi_delete_reference来释放引用，避免内存泄漏
+        napi_create_reference(localEnv, obj, 1, &ref);
+        if (!localEnv.RecreateSame()) {
+            if (ref != nullptr) {
+                napi_delete_reference(localEnv, ref);
+            }
+            return;
+        };
+        if (ref != nullptr) {
+            napi_delete_reference(localEnv, ref);
+        }
+    }).detach();
+    return nullptr;
+}
+```
+
+**napi\_async\_work相关接口**
+
+napi\_queue\_async\_work、napi\_queue\_async\_work\_with\_qos 和 napi\_cancel\_async\_work 的示例代码
+
+```cpp
+/*
+ * 宏 EXPAND_ASYNC_WORK_CASE 将为 op 提供如下变量
+ * @variable napi_env localEnv
+ * @variable napi_async_work work
+ */
+#define EXPAND_ASYNC_WORK_CASE(name, op)                                           \
+napi_value name(napi_env env, napi_callback_info cbinfo)                           \
+{                                                                                  \
+    CallbackInfo info(env, cbinfo);                                                \
+    bool same = true;                                                              \
+    STRICT_NAPI_CALL(napi_get_value_bool(env, info[0], &same));                    \
+    std::thread([](bool same) {                                                    \
+        EngineProxy localEnv;                                                      \
+        napi_async_work work = nullptr;                                            \
+        {                                                                          \
+            napi_value taskName = nullptr;                                         \
+            napi_create_string_utf8(localEnv, #name, NAPI_AUTO_LENGTH, &taskName); \
+            /* 不建议使用空的 execute 回调创建 napi_async_work */                    \
+            /* 此处可能出现内存泄漏，仅为复现 dfx 维测 */                            \
+            napi_create_async_work(localEnv, nullptr, taskName,                    \
+                [](napi_env, void*) {}, [](napi_env, napi_status, void* ) {},      \
+                nullptr, &work);                                                   \
+            if (!localEnv.Recreate(same)) {                                        \
+                if (work != nullptr) {                                             \
+                    napi_delete_async_work(localEnv, work);                        \
+                }                                                                  \
+                return;                                                            \
+            }                                                                      \
+        }                                                                          \
+        (op);                                                                      \
+        if (work != nullptr) {                                                     \
+            napi_delete_async_work(localEnv, work);                                \
+        }                                                                          \
+    }, same).detach();                                                             \
+    return nullptr;                                                                \
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXQueueWork: (samePtr: boolean) => void;
+ * const triggerDFXQueueWorkWithQos: (samePtr: boolean) => void;
+ * const triggerDFXCancelWork: (samePtr: boolean) => void;
+ */
+EXPAND_ASYNC_WORK_CASE(TriggerDFXQueueWork,
+    napi_queue_async_work(localEnv, work))
+EXPAND_ASYNC_WORK_CASE(TriggerDFXQueueWorkWithQos,
+    napi_queue_async_work_with_qos(localEnv, work, napi_qos_default))
+EXPAND_ASYNC_WORK_CASE(TriggerDFXCancelWork,
+    napi_cancel_async_work(localEnv, work))
+
+#undef EXPAND_ASYNC_WORK_CASE
+```
+
+**napi\_threadsafe\_function相关接口**
+
+napi\_call\_threadsafe\_function 和 napi\_release\_threadsafe\_function 的示例代码
+
+```cpp
+/*
+ * 宏 EXPAND_THREADSAFE_FUNCTION_CASE 将为 op 提供如下变量
+ * @variable napi_env localEnv
+ * @variable napi_threadsafe_function tsfn
+ */
+#define EXPAND_THREADSAFE_FUNCTION_CASE(name, op)                                       \
+    napi_value name(napi_env, napi_callback_info info) {                                \
+        std::thread([]() {                                                              \
+            EngineProxy localEnv;                                                       \
+            napi_threadsafe_function tsfn = nullptr;                                    \
+            {                                                                           \
+                napi_value taskName = nullptr;                                          \
+                napi_create_string_utf8(localEnv, "Test", NAPI_AUTO_LENGTH, &taskName); \
+                // napi_create_threadsafe_function创建线程安全函数，任务执行完成后，      \
+                // 需调用napi_release_threadsafe_function释放
+                napi_create_threadsafe_function(                                        \
+                    localEnv, nullptr, nullptr, taskName, 0, 1, nullptr,                \
+                    [](napi_env, void *, void *) {}, nullptr,                           \
+                    [](napi_env, napi_value, void *, void *) {}, &tsfn);                \
+                if (status != napi_ok) {                                                \
+                    OH_INFO_ERROR(LOG_APP,"napi_create_threadsafe_function failed");    \
+                    return nullptr;                                                     \
+                }                                                                       \
+                if (!localEnv.RecreateSame()) {                                         \
+                    return;                                                             \
+                };                                                                      \
+            }                                                                           \
+            (op);                                                                       \
+        }).detach();                                                                    \
+        return nullptr;                                                                 \
+    }
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXTsfnCall: () => void;
+ * const triggerDFXTsfnRelease: () => void;
+ */
+EXPAND_THREADSAFE_FUNCTION_CASE(TriggerDFXTsfnCall,
+    napi_call_threadsafe_function(tsfn, nullptr, napi_tsfn_nonblocking))
+EXPAND_THREADSAFE_FUNCTION_CASE(TriggerDFXTsfnRelease,
+    napi_release_threadsafe_function(tsfn, napi_tsfn_release))
+
+#undef EXPAND_THREADSAFE_FUNCTION_CASE
+```
+
+## 跨线程调用
+
+### 覆盖范围及关键日志
+
+大多数napi接口都不是多线程安全的，因此为这些错误用法额外增加了定位手段。
+
+若无特殊说明，本章节描述的维测手段会在启用ArkTS运行时多线程检测开关后，立即中断进程。
+
+**关键日志**
+
+current napi interface cannot run in multi-thread, thread id: <env tid>, current thread id: <current tid>
+
+该维测手段覆盖范围如下：
+
+1. napi\_add\_env\_cleanup\_hook\*
+2. napi\_remove\_env\_cleanup\_hook\*
+3. napi\_add\_async\_cleanup\_hook
+4. napi\_set\_instance\_data
+5. napi\_get\_instance\_data
+
+\*：具有该标志的接口，在维测触发的情况下，仅打印带有调用栈信息的ERROR日志，并不会中断进程。
+
+### 案例及示例代码
+
+**注意** 
+
+下面的代码仅用于构造异常场景，触发异常分支的DFX日志。在充分理解其意图前，请勿将其应用到业务场景中。
+
+**env\_cleanup\_hook相关接口**
+
+napi\_add\_env\_cleanup\_hook 和 napi\_remove\_env\_cleanup\_hook 的示例代码
+
+```cpp
+static void EnvCleanUpCallback(void *arg) {
+    char* data = reinterpret_cast<char *>(arg);
+    delete data;
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXClnAddXT: () => void;
+ */
+napi_value TriggerDFXClnAddXT(napi_env env, napi_callback_info info)
+{
+    char* data = new char;
+    CHECK_NOT_NULL(data);
+    *data = '\0';
+    std::thread([](napi_env env, char* data) {
+        napi_add_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    }, env, data).join();
+    napi_remove_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    delete data;
+    return nullptr;
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXClnAddMT: () => void;
+ */
+napi_value TriggerDFXClnAddMT(napi_env env, napi_callback_info info)
+{
+    char* data = new char;
+    CHECK_NOT_NULL(data);
+    *data = '\0';
+    napi_add_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    napi_add_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    napi_remove_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    delete data;
+    return nullptr;
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXClnRmXT: () => void;
+ */
+napi_value TriggerDFXClnRmXT(napi_env env, napi_callback_info info)
+{
+    char* data = new char;
+    CHECK_NOT_NULL(data);
+    *data = '\0';
+    napi_add_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    std::thread([](napi_env env, char* data) {
+        napi_remove_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+        delete data;
+    }, env, data).join();
+    return nullptr;
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXClnRmMT: () => void;
+ */
+napi_value TriggerDFXClnRmMT(napi_env env, napi_callback_info info)
+{
+    char* data = new char;
+    CHECK_NOT_NULL(data);
+    *data = '\0';
+    napi_add_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    napi_remove_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    // 解注册使用的参数与注册时的一致性，比重复解注册更值得关注
+    napi_remove_env_cleanup_hook(env, EnvCleanUpCallback, reinterpret_cast<void *>(data));
+    delete data;
+    return nullptr;
+}
+```
+
+**async\_cleanup\_hook相关接口**
+
+napi\_add\_async\_cleanup\_hook示例代码
+
+```cpp
+static void AsyncCleanupCallback(napi_async_cleanup_hook_handle handle, void *)
+{
+    napi_remove_async_cleanup_hook(handle);
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXAsyncAddXT: () => void;
+ */
+napi_value TriggerDFXAsyncAddXT(napi_env env, napi_callback_info info)
+{
+    std::thread([](napi_env env) {
+        napi_add_async_cleanup_hook(env, AsyncCleanupCallback, nullptr, nullptr);
+    }, env).join();
+    return nullptr;
+}
+```
+
+**instance\_data相关接口**
+
+napi\_set\_instance\_data、napi\_get\_instance\_data示例代码
+
+```cpp
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXInsSetXT: () => void;
+ */
+napi_value TriggerDFXInsSetXT(napi_env env, napi_callback_info info)
+{
+    std::thread([](napi_env env) {
+        napi_set_instance_data(env, nullptr, [](napi_env, void *, void *) {}, nullptr);
+    }, env).join();
+    return nullptr;
+}
+
+/*
+ * 接口声明 index.d.ts
+ * const triggerDFXInsGetXT: () => void;
+ */
+napi_value TriggerDFXInsGetXT(napi_env env, napi_callback_info info)
+{
+    std::thread([](napi_env env) {
+        void *data = nullptr;
+        napi_get_instance_data(env, &data);
+    }, env).join();
+    return nullptr;
+}
+```
+
+## 异步任务回调及引用回调崩溃
+
+### 覆盖范围及关键日志
+
+当回调函数存在空指针解引用或数组越界等逻辑错误时会导致应用崩溃。若发生崩溃且启用了编译优化，崩溃调用栈仅显示调用回调函数的函数，而不会显示实际调用的回调函数具体来自哪个so共享库。开发者可通过以下步骤定位问题：
+
+1. 获取打印的回调函数指针（十进制）。
+2. 将指针转换为十六进制。
+3. 在crash文件的Maps中匹配十六进制地址，即可确定实际导致崩溃的函数具体是来自哪个so共享库。
+
+**关键日志**
+
+Crash occurred on <function name>, callback: <callback ptr>
+
+该维测手段覆盖范围如下：
+
+1. napi\_wrap、napi\_wrap\_enhance、napi\_add\_finalizer中的finalize\_cb执行过程中发生崩溃。
+2. napi\_set\_instance\_data中finalize\_cb执行过程中发生崩溃。
+3. 调用napi\_async\_work相关接口complete执行过程中发生崩溃。
+4. 调用threadsafe\_function相关接口，thread\_finalize\_cb及call\_js\_cb执行过程中发生崩溃。
+
+### 案例及示例代码
+
+**注意** 
+
+下面的代码仅用于构造异常场景，触发异常分支的DFX日志。在充分理解其意图前，请勿将其直接应用到业务场景中。
+
+**构造崩溃场景**
+
+```
+/*
+ * 接口声明 index.d.ts
+ * const wrapCb: () => void;
+ */
+static napi_value WrapCb(napi_env env, napi_callback_info info)
+{
+    napi_value obj = nullptr;
+    napi_status status = napi_create_object(env, &obj);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "napi_create_object fail");
+        return nullptr;
+    }
+    const char* testStr = "test";
+    status = napi_wrap(env, obj, (void*)testStr, [](napi_env env, void* data, void* hint){
+        abort();
+    }, nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "napi_wrap fail");
+        return nullptr;
+    }
+    return nullptr;
+}
+```
+
+执行wrapCb后触发垃圾回收，触发回调函数执行。
+
+```typescript
+import testNapi from 'libentry.so';
+
+declare class ArkTools {
+  static forceFullGC():void;
+}
+
+testNapi.wrapCb();
+ArkTools.forceFullGC();
+```
+
+**分析崩溃日志**
+
+```text
+Device Memory(kB): Total 11871352, Free 332976, Available 5793792
+Reason:Signal:SIGABRT(SI_TKILL)@0x01317bf10000b226 from:45606:20020209
+LastFatalMessage:[NAPI] Crash occurred on ProcessAll, callback: 385297425128
+```
+
+将callback指针地址385297425128转为16进制表示为0x59B58422E8。在该crash文件的Maps中搜索该回调函数的地址，用得到的16进制数减去libentry.so模块开始地址得到偏移地址0x22E8。
+
+```text
+59b5504000-59b5505000 rw-p 00001000 /system/lib64/lib_cpuboost.so
+59b5505000-59b5805000 rw-p 00000000 [anon:native_heap:jemalloc]
+59b5840000-59b5841000 r--p 00000000 /data/storage/el1/bundle/libs/arm64/libentry.so
+59b5841000-59b5843000 r-xp 00000000 /data/storage/el1/bundle/libs/arm64/libentry.so
+59b5843000-59b5844000 r--p 00001000 /data/storage/el1/bundle/libs/arm64/libentry.so
+59b5844000-59b5845000 rw-p 00001000 /data/storage/el1/bundle/libs/arm64/libentry.so
+59b5880000-59b5912000 r--p 00000000 /data/storage/el1/bundle/libs/arm64/libc++_shared.so
+59b5912000-59b59ac000 r-xp 00091000 /data/storage/el1/bundle/libs/arm64/libc++_shared.so
+59b59ac000-59b59b6000 r--p 0012a000 /data/storage/el1/bundle/libs/arm64/libc++_shared.so
+59b59b6000-59b59b7000 rw-p 00133000 /data/storage/el1/bundle/libs/arm64/libc++_shared.so
+```
+
+通过[llvm-addr2line](ide-exception-stack-parsing-principle.md#section1735713501344)工具可以确定0x22E8正是回调函数所在行。由此可以确定问题发生在napi\_wrap时传入的回调函数中。
+
+```text
+llvm-addr2line -ifCe libentry.so 0x22e8
+WrapCb(napi_env__, napi_callback_info__)::$_0::invoke(napi_env, void, void*)
+D:/DevEcoStudioProjects/PrintCbPtr/entry/src/main/cpp/napi_init.cpp:9
+```

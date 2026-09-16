@@ -1,0 +1,153 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/remote-communication-tpms
+title: 基于TracingConfiguration实现性能维测
+breadcrumb: 指南 > 系统 > 网络 > Remote Communication Kit（远场通信服务） > 提升HTTP传输性能 > 基于TracingConfiguration实现性能维测
+category: harmonyos-guides
+scraped_at: 2026-09-15T07:02:01+08:00
+doc_updated_at: 2026-09-09
+content_hash: sha256:9b10068f96c2a332df747688bcbb7493260982c956567bd70bc393236b8361ea
+---
+
+## 约束与限制
+
+性能维测能力支持Phone、2in1、Tablet、Wearable设备。并且从5.1.1(19)开始，新增支持TV设备。
+
+## 捕获有关HTTP请求/响应流的详细信息
+
+当需要进行性能维测时，可以采集应用中HTTP请求的详细跟踪信息时，利用[TracingConfiguration](../harmonyos-references/remote-communication-rcp.md#tracingconfiguration)进行相关配置。[TracingConfiguration](../harmonyos-references/remote-communication-rcp.md#tracingconfiguration)中可以设置verbose（启用详细跟踪）、infoToCollect（配置要收集的特定类型的信息事件）、collectTimeInfo（在跟踪过程中是否应收集与时间相关的信息）、httpEventsHandler（为HTTP请求/响应过程中的特定操作定义响应处理程序的回调）四个参数。
+
+下面将以获取HTTP请求/响应时的数据接收时、请求头接收时、数据传输完成时等详细信息为例，进行介绍。
+
+1. 导入需要的模块，示例中包含了利用远场通信框架发起网络请求以及请求后的响应和错误处理，所以需导入以下模块。
+
+   ```typescript
+   import { rcp } from '@kit.RemoteCommunicationKit';
+   import { BusinessError } from '@kit.BasicServicesKit';
+   ```
+2. 创建自定义响应处理程序，在[HttpEventsHandler](../harmonyos-references/remote-communication-rcp.md#httpeventshandler)中设置onDataReceive（当接收到HTTP响应正文的一部分时调用的回调）、onHeaderReceive（用于在响应期间处理接收到的headers的回调）、onDataEnd（数据传输完成时触发的回调）。
+
+   ```typescript
+   // 定义自定义响应处理程序
+   const customHttpEventsHandler: rcp.HttpEventsHandler = {
+     onDataReceive: (incomingData: ArrayBuffer) => {
+       // 用于处理传入数据的自定义逻辑
+       console.info(`Received data: ${incomingData.byteLength}`, );
+       return incomingData.byteLength;
+     },
+     onHeaderReceive: (headers: rcp.RequestHeaders) => {
+       // 处理响应头的自定义逻辑
+       console.info(`Received headers: ${JSON.stringify(headers)}`);
+     },
+     onDataEnd: () => {
+       // 用于处理数据传输完成的自定义逻辑
+       console.info('Data transfer complete');
+     }
+   };
+   ```
+3. 设置tracingConfig对象中的verbose为true，表示启用详细跟踪，设置tracingConfig对象中的infoToCollect对象中的incomingData为true（收集传入的数据信息事件）、outgoingData为true（收集传出的数据信息事件）、incomingHeader为true（收集传入的header信息事件）、outgoingHeader为true（收集传出的header信息事件）。
+
+   ```typescript
+   // 配置跟踪设置
+   const tracingConfig: rcp.TracingConfiguration = {
+     verbose: true,
+     infoToCollect: {
+       incomingHeader: true, // 收集传入的header信息事件
+       outgoingHeader: true, // 收集传出的header信息事件
+       incomingData: true, // 收集传入数据信息事件
+       outgoingData: true // 收集传出数据信息事件
+     },
+     collectTimeInfo: true,
+     httpEventsHandler: customHttpEventsHandler
+   };
+   const securityConfig: rcp.SecurityConfiguration = {
+     tlsOptions: {
+       tlsVersion: 'TlsV1.3'
+     }
+   };
+   ```
+4. 调用rcp.createSession()传入tracingConfig ，创建通信会话对象session。
+
+   ```typescript
+   // 创建通信会话对象，并传入相关配置
+   const session = rcp.createSession({ requestConfiguration: { tracing: tracingConfig, security: securityConfig } });
+   // 'https://www.example.com'是示例网址
+   session.get('https://www.example.com').then((response) => {
+     console.info(`Request succeeded, message is ${JSON.stringify(response)}`);
+     // ...
+   }).catch((err: BusinessError) => {
+     console.error(`err: error code is ${err.code}, error data is ${err.data}`);
+     // ...
+   });
+   ```
+
+## HTTP请求过程中各时间点详解
+
+在实施性能维测的过程中，HTTP请求的各个时间点至关重要。借助TimeInfo提供的详细字段，可以精准控制请求过程，无论是直接利用这些字段，还是通过它们之间的运算，都能准确获取所需的时间点，从而提升测试效率。
+
+下面，我们将通过图片、时间线及一段示例代码，详细解析请求过程中的关键时间点。
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/89/v3/d5ozIpb9SV2FgwJJ85Jugg/zh-cn_image_0000002753295271.png)
+
+从图中可以看到HTTP请求过程的基本过程，并且有一些关键的时间点，下面将以时间线的方式对其进行说明：
+
+### TimeInfo时间线
+
+请求开始 （0时刻） -> nameLookupTimeMs（DNS解析）-> connectTimeMs（建立连接）-> tlsHandshakeTimeMs（TLS握手）-> preTransferTimeMs（请求业务数据发送到服务器的时间点） -> startTransferTimeMs（从服务器接收到首包数据的时间点）。
+
+**说明** 
+
+各时间节点所显示的时间均相对于0时刻，即从0时刻开始计时的时间。例如tlsHandshakeTimeMs为150.1ms，指从发起请求时间0开始，直到TLS握手结束所花费的时间为150.1ms。
+
+网络请求过程中关键节点时间计算方法：
+
+* 首包耗时：startTransferTimeMs - preTransferTimeMs
+* TLS握手（不包含建连时间）耗时：tlsHandshakeTimeMs - connectTimeMs
+* 接收剩余数据的耗时：totalTimeMs - startTransferTimeMs
+
+### 示例代码
+
+1. 导入需要的模块，示例中包含了利用远场通信框架发起网络请求以及请求后的响应和错误处理，所以需导入以下模块。
+
+   ```typescript
+   import { BusinessError } from '@kit.BasicServicesKit';
+   import { rcp } from '@kit.RemoteCommunicationKit';
+   ```
+2. 这段代码在使用过程中会将上述说明中三个比较关键的时间点打印出来，开发者可以根据获取到的时间对应用性能实现动态调整，获取最佳体验。
+
+   ```typescript
+   // 1、创建session、requestURL，'https://www.example.com'是示例网址
+   const session = rcp.createSession();
+   const requestURL = 'https://www.example.com';
+
+   // 2、在需要跟踪分析请求过程中各个时间段消耗的时间，请将此开关打开
+   const configuration: rcp.Configuration = {
+     tracing: {
+       collectTimeInfo: true
+     }
+   }
+
+   // 3、创建请求
+   const request = new rcp.Request(requestURL, 'GET');
+   request.configuration = configuration;
+
+   // 4、使用fetch发起网络请求，request中携带上面配置好的configuration
+   session.fetch(request).then((response: rcp.Response) => {
+     // 由于timeInfo中各个参数有可能为undefined，所以需要在两个时间段做运算前添加判空操作
+     if (!response.timeInfo) {
+       console.error(`timeInfo is undefined ${response.timeInfo}`);
+       return;
+     }
+     let remainderDataTime = response.timeInfo?.totalTimeMs - response.timeInfo?.startTransferTimeMs;
+     let firstPackageTime = response.timeInfo?.startTransferTimeMs - response.timeInfo?.preTransferTimeMs;
+     let tlsTime = response.timeInfo?.tlsHandshakeTimeMs - response.timeInfo?.connectTimeMs;
+
+     console.info(`首包耗时${firstPackageTime}`);
+     console.info(`TLS握手（不包含建连时间）耗时${tlsTime}`);
+     console.info(`接收剩余数据的耗时${remainderDataTime}`);
+
+     // ...
+   }).catch((err: BusinessError) => {
+     console.error(`Response err, the error code is ${err.code}, error data is ${err.data}`);
+     // ...
+   })
+   ```

@@ -1,0 +1,61 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-references/_f_g___vec3_d
+title: FG_Vec3D
+breadcrumb: API参考 > 图形 > Graphics Accelerate Kit（图形加速服务） > C API > 头文件和结构体 > 结构体 > FG_Vec3D
+category: harmonyos-references
+scraped_at: 2026-09-02T15:02:48+08:00
+doc_updated_at: 2026-08-29
+content_hash: sha256:f77df3811d250bf72c7079ee4fa4f7a366202d0831c23979b956bb5b9c693096
+---
+
+## 概述
+
+此结构体描述超帧三维向量。
+
+**起始版本：** 5.0.0(12)
+
+**相关模块：** [GraphicsAccelerate](_graphics_accelerate.md)
+
+**所在头文件：** [frame\_generation\_base.h](frame__generation__base_8h.md)
+
+## 汇总
+
+### 成员变量
+
+| 名称 | 描述 |
+| --- | --- |
+| float x | 三维向量的X轴坐标。 |
+| float y | 三维向量的Y轴坐标。 |
+| float z | 三维向量的Z轴坐标。 |
+
+## 结构体成员变量说明
+
+### x
+
+```c
+float FG_Vec3D::x
+```
+
+**描述**
+
+三维向量的X轴坐标。
+
+### y
+
+```c
+float FG_Vec3D::y
+```
+
+**描述**
+
+三维向量的Y轴坐标。
+
+### z
+
+```c
+float FG_Vec3D::z
+```
+
+**描述**
+
+三维向量的Z轴坐标。

@@ -1,0 +1,89 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/networkboost-preparations
+title: 开发准备
+breadcrumb: 指南 > 系统 > 网络 > Network Boost Kit（网络加速服务） > 开发准备
+category: harmonyos-guides
+scraped_at: 2026-09-15T07:01:59+08:00
+doc_updated_at: 2026-09-04
+content_hash: sha256:0926ea2c881e597dbb413610fc958a060e5133d18b78fa76e8520ac65be998b9
+---
+
+## 申请权限
+
+### 场景概述
+
+应用在使用Network Boost Kit能力前需要检查是否已经获取对应权限。如未获得授权，需要声明对应权限。
+
+Network Boost Kit所需权限有：
+
+ohos.permission.GET\_NETWORK\_INFO：用户获取设备网络信息。
+
+ohos.permission.INTERNET：允许使用因特网访问网络。
+
+ohos.permission.LINKTURBO：允许应用使用多网并发等网络加速能力，连接迁移能力部分接口需要该权限，如果不使用该能力，不需要申请该权限。
+
+必须手动配置上述权限后才能使用，详细配置参见[申请权限步骤](networkboost-preparations.md#申请权限步骤)。
+
+其中ohos.permission.LINKTURBO权限为受限ACL权限，需要特别配置和申请，具体操作步骤参考[配置签名](networkboost-preparations.md#配置签名)和[受限ACL权限申请](networkboost-preparations.md#受限acl权限申请)。
+
+### 申请权限步骤
+
+需要在entry/src/main路径下的module.json5中配置所需申请的权限。示例代码如下所示：
+
+```typescript
+{
+  "module": {
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.GET_NETWORK_INFO"
+      },
+      {
+        "name": "ohos.permission.INTERNET"
+      },
+      {
+        "name": "ohos.permission.LINKTURBO"
+      }
+    ]
+  }
+}
+```
+
+### C API开发准备
+
+除上述权限配置外，C API使用时还需要在CMakeLists.txt中设置动态库路径及头文件路径，并进行链接。
+
+如编译target为entry，则添加如下命令：
+
+```
+target_include_directories(entry PUBLIC ${HMOS_SDK_NATIVE}/sysroot/usr/include)
+target_link_directories(entry PUBLIC ${HMOS_SDK_NATIVE}/sysroot/usr/lib/aarch64-linux-ohos)
+target_link_libraries(entry PUBLIC libnetwork_boost.so) #链接libnetwork_boost.so及其他依赖的so
+```
+
+## 配置签名
+
+* 调试阶段需要在AGC中[申请调试证书](ide-signing-manual.md#section294112511046)、[注册设备](../app/agc-help-add-device-0000002283189937.md)、[申请调试Profile文件和添加权限信息](ide-signing-manual.md#section201901445352)后，再[配置调试签名](ide-signing.md)，或者通过DevEco Studio自动签名完成申请，在自动签名的过程中，将由DevEco Studio完成向AGC申请受限权限的步骤，开发者可直接使用，具体请参考[自动签名](ide-signing-auto.md)。
+* 发布阶段，在API版本26.0.0 Beta1之前，需要[申请发布证书](../app/agc-help-release-cert-0000002283336729.md)、[申请发布Profile](../app/agc-help-release-profile-0000002248341090.md)，并完成[配置签名信息](ide-publish-app.md#section945904791115)。在API版本26.0.0 Beta1及以上，发布时无需上述操作，流程已简化。
+
+## 受限ACL权限申请
+
+1. [申请调试Profile文件和添加权限信息](ide-signing-manual.md#section201901445352)和[申请发布Profile](../app/agc-help-release-profile-0000002248341090.md)操作步骤中第4步“申请权限”是必须的，选中“受限ACL权限”后再点击“选择”。
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/d0/v3/hxtqANluTA63HAufQ3ODUw/zh-cn_image_0000002753295267.png)
+2. 在权限搜索框中输入"ohos.permission.LINKTURBO"找到LINKTURBO的权限并勾选，再提交申请。
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/c7/v3/IfTQDyBJTh-Fc7W_zOMG_w/zh-cn_image_0000002753455185.png)
+3. 根据实际业务需求填写申请原因并提交，提交后将在1个工作日回复，可以[互动中心](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/interactive)查看申请情况。
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/b9/v3/6t7SSKynRBG3SZewvKfbEQ/zh-cn_image_0000002723855420.png)
+4. 权限申请通过后在“已获取权限”中可以看到已申请的权限，勾选后点击确定。
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/72/v3/wy_ygJMTR6afceTFRdh0Bw/zh-cn_image_0000002723695502.png)
+5. 选择权限后点击“添加”生成新的Profile文件，下载后按[手动签名](ide-signing-manual.md)替换profile文件。
+6. 在工程中entry模块的module.json5文件中，在"requestPermissions"节点添加"ohos.permission.LINKTURBO"权限，如下所示：
+
+```arkts
+"requestPermissions": [{
+  "name": "ohos.permission.LINKTURBO"
+}]
+```

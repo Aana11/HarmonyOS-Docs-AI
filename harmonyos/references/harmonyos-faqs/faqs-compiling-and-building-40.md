@@ -1,0 +1,23 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-faqs/faqs-compiling-and-building-40
+title: 编译报错“In the form_config.json file, if the value of the updateEnabled field is true, the updateDuration and scheduleUpdateTime fields cannot be both empty”
+breadcrumb: FAQ > DevEco Studio > 编译构建 > 编译报错“In the form_config.json file, if the value of the updateEnabled field is true, the updateDuration and scheduleUpdateTime fields cannot be both empty”
+category: harmonyos-faqs
+scraped_at: 2026-09-02T14:54:54+08:00
+doc_updated_at: 2026-06-15
+content_hash: sha256:7868421295b35e17d8c13b6f11eddfef5a3a5a66730d9758371e1d5fe96dac2d
+---
+
+**问题现象**
+
+在form\_config.json文件中，如果updateEnabled字段的值为true，则updateDuration和scheduleUpdateTime字段不能同时为空。
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/fd/v3/KUkK15hjTEiND8bMCou4Jw/zh-cn_image_0000002654837819.png "点击放大")
+
+**问题原因**
+
+从 DevEco Studio NEXT Developer Preview 2 版本开始，新增规则：卡片的配置文件中必须包含updateEnabled，设置为true时，可以选择定时刷新（updateDuration）或定点刷新（scheduledUpdateTime）。如果同时配置了两种刷新方式，定时刷新将优先生效。
+
+**解决措施**
+
+进入 module.json5 文件，根据需求选择配置 updateEnabled 为 false，或配置定时刷新（updateDuration）和定点刷新（scheduledUpdateTime）。

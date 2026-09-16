@@ -1,0 +1,77 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ide-hvigor-path
+title: 自定义.hvigor目录路径
+breadcrumb: 指南 > 构建应用 > 配置构建流程 > 自定义.hvigor目录路径
+category: harmonyos-guides
+scraped_at: 2026-09-15T07:03:49+08:00
+doc_updated_at: 2026-07-15
+content_hash: sha256:2eadeb79c0eb1935af8f134437cefa6a74fd370bc9e3b99952e5ec60e2b92c51
+---
+
+.hvigor目录默认位于用户目录下：
+
+* Windows：C:\Users\username\.hvigor
+* macOS：/Users/username/.hvigor
+* Linux：
+  + root用户：/root/.hvigor
+  + 非root用户：/home/username/.hvigor
+
+若默认目录的磁盘空间不足，开发者需要自定义.hvigor目录路径，可通过以下方式自行配置。
+
+**说明** 
+
+自定义.hvigor目录时，不能包含空格。
+
+* Windows环境变量设置方法：
+
+  在系统或者用户的变量中，添加自定义.hvigor目录的绝对路径。
+
+  变量名：HVIGOR\_USER\_HOME
+
+  变量值：自定义存放.hvigor目录的绝对路径。如D:\HvigorUserHome
+
+  ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/0d/v3/-dlu8Pj4R62NKTfSPzis0Q/zh-cn_image_0000002731382159.png)
+* macOS环境变量设置方法：
+
+  在macOS上为DevEco Studio设置环境变量需要使用launchd来设置。
+  + 临时生效的设置方式：
+
+    在终端中执行launchctl setenv语句并重新启动DevEco Studio即可。
+
+    ```bash
+    launchctl setenv HVIGOR_USER_HOME /Users/xx #本处路径请替换为.hvigor目录的绝对路径
+    ```
+
+    该设置方式在重启电脑后将失效。
+  + 重启不失效的设置方式：
+
+    **说明** 
+
+    在macOS上设置系统变量的方式因系统版本不同而存在多种差异，以下仅为在macOS上为DevEco Studio设置系统变量的一种示例，具体设置方式以系统版本为准。
+
+    在/etc/launchd.conf（若该文件不存在，可自行创建）中添加如下内容。
+
+    ```bash
+    setenv HVIGOR_USER_HOME /Users/xx #本处路径请替换为.hvigor目录的绝对路径
+    ```
+
+    设置完成后，重启电脑后才可生效。
+* Linux环境变量设置方法：
+
+  打开终端工具，执行以下命令。
+
+  ```bash
+  vim ~/.bashrc
+  ```
+
+  添加HVIGOR\_USER\_HOME环境变量。
+
+  ```bash
+  export HVIGOR_USER_HOME=/home/xx  #本处路径请替换为.hvigor目录的绝对路径
+  ```
+
+  保存并关闭文件，使用source命令重新加载.bashrc配置文件。
+
+  ```bash
+  source ~/.bashrc
+  ```

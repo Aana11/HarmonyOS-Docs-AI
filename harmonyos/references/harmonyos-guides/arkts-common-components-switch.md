@@ -1,0 +1,166 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-common-components-switch
+title: 切换按钮 (Toggle)
+breadcrumb: 指南 > 应用框架 > ArkUI（方舟UI框架） > UI开发 (ArkTS声明式开发范式) > 按钮与选择 > 切换按钮 (Toggle)
+category: harmonyos-guides
+scraped_at: 2026-09-15T07:01:25+08:00
+doc_updated_at: 2026-09-09
+content_hash: sha256:d50f3886fc1f3b3ee7714dcd81d68b62cff013749e5df2d43b796103a2335c0e
+---
+
+Toggle组件提供状态按钮样式、勾选框样式和开关样式，一般用于两种状态之间的切换。具体用法请参考[Toggle](../harmonyos-references/ts-basic-components-toggle.md)。
+
+## 创建切换按钮
+
+Toggle通过调用[ToggleOptions](../harmonyos-references/ts-basic-components-toggle.md#toggleoptions18对象说明)来创建，具体调用形式如下：
+
+```ts
+Toggle(options: { type: ToggleType, isOn?: boolean })
+```
+
+其中，ToggleType为切换类型，包括Button、Checkbox和Switch，isOn为切换按钮的状态。
+
+API version 11开始，Checkbox默认样式由圆角方形变为圆形。
+
+接口调用有以下两种形式：
+
+* 创建不包含子组件的Toggle。
+
+  当ToggleType为Checkbox或者Switch时，用于创建不包含子组件的Toggle：
+
+  ```typescript
+  Toggle({ type: ToggleType.Checkbox, isOn: false }).id('toggle1') // 请开发者替换为实际的id
+  Toggle({ type: ToggleType.Checkbox, isOn: true }).id('toggle2') // 请开发者替换为实际的id
+  ```
+
+  ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/ae/v3/FTNgOn6ZSWGm-oHu9CaAPQ/zh-cn_image_0000002723854730.png)
+
+  ```typescript
+  Toggle({ type: ToggleType.Switch, isOn: false }).id('toggle3') // 请开发者替换为实际的id
+  Toggle({ type: ToggleType.Switch, isOn: true }).id('toggle4') // 请开发者替换为实际的id
+  ```
+
+  ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/a4/v3/WoyV6rBAR-28r1ooyLJ28Q/zh-cn_image_0000002723694812.png)
+* 创建包含子组件的Toggle。
+
+  当ToggleType为Button时，只能包含一个子组件，如果子组件有文本设置，则相应的文本内容会显示在按钮上。
+
+  ```typescript
+  Toggle({ type: ToggleType.Button, isOn: false }) {
+    Text('status button')
+      .fontColor('#182431')
+      .fontSize(12)
+  }.width(100).id('toggle5') // 请开发者替换为实际的id
+
+  Toggle({ type: ToggleType.Button, isOn: true }) {
+    Text('status button')
+      .fontColor('#182431')
+      .fontSize(12)
+  }.width(100).id('toggle6') // 请开发者替换为实际的id
+  ```
+
+  ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/d8/v3/yQqPXaSQSV-jk5o6yIo_XA/zh-cn_image_0000002753294579.png)
+
+## 自定义样式
+
+* 通过selectedColor属性设置Toggle打开选中后的背景颜色。
+
+  ```typescript
+    Toggle({ type: ToggleType.Button, isOn: true }) {
+      Text('status button')
+        .fontColor('#182431')
+        .fontSize(12)
+    }.width(100)
+    .selectedColor(Color.Pink)
+  // ···
+
+    Toggle({ type: ToggleType.Checkbox, isOn: true })
+      .selectedColor(Color.Pink)
+      // ···
+    Toggle({ type: ToggleType.Switch, isOn: true })
+      .selectedColor(Color.Pink)
+      // ···
+  ```
+
+  ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/d8/v3/zMtEX8KSQ9O6ledPBPhb1A/zh-cn_image_0000002753454497.png)
+* 通过switchPointColor属性设置Switch类型的圆形滑块颜色，仅对type为ToggleType.Switch生效。
+
+  ```typescript
+  Toggle({ type: ToggleType.Switch, isOn: false })
+    .switchPointColor(Color.Pink)
+    // ···
+  Toggle({ type: ToggleType.Switch, isOn: true })
+    .switchPointColor(Color.Pink)
+    // ···
+  ```
+
+  ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/de/v3/W5mFCQjCQIqyQc9nbcN9dQ/zh-cn_image_0000002723854732.png)
+
+## 添加事件
+
+除支持[通用事件](../harmonyos-references/ts-component-general-events.md)外，Toggle还用于选中和取消选中后触发某些操作，可以绑定onChange事件来响应操作后的自定义行为。
+
+```typescript
+Toggle({ type: ToggleType.Switch, isOn: false })
+  .onChange((isOn: boolean) => {
+    if(isOn) {
+      // 需要执行的操作
+      // ···
+    }
+  })
+```
+
+## 场景示例
+
+Toggle用于切换蓝牙开关状态。
+
+```typescript
+// xxx.ets
+import { promptAction } from '@kit.ArkUI';
+
+@Entry
+@Component
+export struct ToggleSample {
+  @State message: string = 'off';
+  pathStack: NavPathStack = new NavPathStack();
+
+  build() {
+    NavDestination() {
+      Column({ space: 8 }) {
+        Column({ space: 8 }) {
+          Text('Bluetooth Mode: ' + this.message)
+            .id('message')
+          Row() {
+            Text('Bluetooth')
+            Blank()
+            Toggle({ type: ToggleType.Switch })
+              .id('toggle') // 请开发者替换为实际的id
+              .onChange((isOn: boolean) => {
+                if (isOn) {
+                  this.message = 'on';
+                  promptAction.openToast({ 'message': 'Bluetooth is on.' });
+                } else {
+                  this.message = 'off';
+                  promptAction.openToast({ 'message': 'Bluetooth is off.' });
+                }
+              })
+          }.width('100%')
+        }
+        .alignItems(HorizontalAlign.Start)
+        .backgroundColor('#fff')
+        .borderRadius(12)
+        .padding(12)
+        .width('100%')
+      }
+      .width('100%')
+      .height('100%')
+      .padding({ left: 12, right: 12 })
+    }
+    .backgroundColor('#f1f2f3')
+    // 请将$r('app.string.ToggleCaseExample_title')替换为实际资源文件，在本示例中该资源文件的value值为"toggle蓝牙示例"
+    .title($r('app.string.ToggleCaseExample_title'))
+  }
+}
+```
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/8a/v3/R64_QfLaQK29bap_TznF3w/zh-cn_image_0000002723694814.gif)

@@ -1,0 +1,72 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/gameservice-gameplayer-official
+title: 接入游戏官方账号登录
+breadcrumb: 指南 > 应用服务 > Game Service Kit（游戏服务） > 基础游戏服务（必选） > 游戏登录 > 网络游戏登录 > 接入游戏官方账号登录
+category: harmonyos-guides
+scraped_at: 2026-09-15T07:02:43+08:00
+doc_updated_at: 2026-09-09
+content_hash: sha256:e85982a3f8fe227ebf4c6f54dc60304eab6abcde5d8aea94a7e6936a7c314762
+---
+
+为了支持用户在HarmonyOS 5.0及以上系统上继承其他系统（例如HarmonyOS 4及以下）的官包进度继续游玩，基础游戏服务支持用户使用游戏官方账号登录HarmonyOS 5.0及以上游戏。
+
+## 接入策略
+
+若游戏有官包且有官方账号体系，游戏要求接入游戏官方账号登录。
+
+## 业务流程
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/fe/v3/LBxrwQEOQGq22rPcW4lo7w/zh-cn_image_0000002753295821.png)
+
+1. 玩家启动游戏。
+2. 游戏调用[init](../harmonyos-references/gameservice-gameplayer.md#gameplayerinit-1)接口初始化Game Service Kit。初始化后，弹出华为游戏服务与隐私的声明窗口，玩家确认同意后，则继续往下执行。
+3. 游戏调用[on](../harmonyos-references/gameservice-gameplayer.md#gameplayeronplayerchanged)接口注册事件监听。若监听到playerChanged事件，先清除本地缓存信息，再重新执行unionLogin登录逻辑。
+4. 游戏调用[unionLogin](../harmonyos-references/gameservice-gameplayer.md#gameplayerunionlogin)接口。
+
+   **说明** 
+
+   建议使用session缓存登录状态，玩家下次登录进入游戏无需再调用unionLogin接口，但仍需调用[verifyLocalPlayer](../harmonyos-references/gameservice-gameplayer.md#gameplayerverifylocalplayer)接口。
+5. 向玩家展示联合登录面板。
+6. 玩家选择“游戏官方账号登录”。
+7. 游戏获取到accountName等信息。
+8. 游戏开发者要求自行实现官方账号的实名认证、未成年人防沉迷、支付合规控制。
+9. 游戏调用[verifyLocalPlayer](../harmonyos-references/gameservice-gameplayer.md#gameplayerverifylocalplayer)接口，实现华为账号的实名认证、未成年人防沉迷功能。游戏官方账号和华为账号均通过合规校验，玩家才能进入游戏。若有一方未通过校验，不允许玩家进入游戏。若校验未通过请根据返回的[错误码](../harmonyos-references/errorcode-gameservice.md)进行相应处理。
+
+## 接口说明
+
+具体API说明请详见[接口文档](../harmonyos-references/gameservice-gameplayer.md)。
+
+| 接口名 | 描述 |
+| --- | --- |
+| [init](../harmonyos-references/gameservice-gameplayer.md#gameplayerinit-1)(context: common.UIAbilityContext, callback: AsyncCallback<void>): void | 游戏启动时，需要对Game Service Kit进行初始化。在调用其他API接口前，必须先调用此API接口。使用callback异步回调。 |
+| [on](../harmonyos-references/gameservice-gameplayer.md#gameplayeronplayerchanged)(type: 'playerChanged', callback: Callback<PlayerChangedResult>): void | 玩家变化事件监听接口，通过callback异步回调获取玩家变化结果信息。 |
+| [unionLogin](../harmonyos-references/gameservice-gameplayer.md#gameplayerunionlogin)(context: common.UIAbilityContext, loginParam: UnionLoginParam): Promise<UnionLoginResult> | 华为账号和游戏官方账号联合登录接口，通过Promise对象获取返回值。 |
+| [verifyLocalPlayer](../harmonyos-references/gameservice-gameplayer.md#gameplayerverifylocalplayer)(context: common.UIAbilityContext, thirdUserInfo: ThirdUserInfo): Promise<void> | 合规校验接口，校验当前设备登录的华为账号的实名认证、游戏防沉迷信息，通过Promise对象获取返回值。 |
+
+## 开发步骤
+
+请先参考华为账号登录的[开发准备](gameservice-gameplayer-huawei.md#开发准备)和[开发步骤](gameservice-gameplayer-huawei.md#开发步骤)完成华为账号登录的接入，再继续接入游戏官方账号登录。
+
+### 接口调用流程图
+
+接入游戏官方账号登录的接口调用流程如下：
+
+![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/29/v3/nSNj-ZIgTFyUtefVZCMJiQ/zh-cn_image_0000002753455739.png)
+
+### 合规校验
+
+接入游戏官方账号登录时，要求游戏开发者自行实现游戏官方账号的实名认证、未成年人防沉迷、支付合规控制。
+
+**说明** 
+
+* 用户使用游戏官方账号登录游戏时，设备上基础游戏服务也会基于设备上登录的华为账号实现实名认证、未成年人防沉迷，这属于HarmonyOS 5.0及以上设备的额外要求。**游戏接入游戏官方账号登录时，开发者仍需要基于游戏官方账号实现实名认证、未成年人防沉迷、支付合规控制（例如基于官方账号年龄判断未成年人支付限额等）。**
+* 华为账号与游戏官方账号均通过合规校验，玩家才能进入游戏。若有一方未通过校验，不允许玩家进入游戏或成功完成支付。
+
+### 游戏内切换账号
+
+由于showLoginDialog设置为false，且玩家是非首次登录游戏时，默认沿用上次的登录账号，因此要求开发者在游戏页面上自行增加“切换账号”按钮，玩家点击按钮后强制弹出联合登录面板，允许玩家重新选择华为账号登录或游戏官方账号登录。
+
+1. 建议在游戏内为玩家提供一个“切换账号”按钮。按钮常见的位置如下：
+
+   ![](https://contentcenter-vali-drcn.dbankcdn.cn/pvt_2/DeveloperAlliance_scene_100_1/f/v3/-oylJCzlSzeo6pkPEfYDDw/zh-cn_image_0000002723855974.png)
+2. 玩家点击切换账号按钮时，开发者重新调用[unionLogin](../harmonyos-references/gameservice-gameplayer.md#gameplayerunionlogin)接口，将showLoginDialog参数设置为true，即可强制拉起联合登录面板，允许玩家重新选择华为账号登录或游戏官方账号登录。

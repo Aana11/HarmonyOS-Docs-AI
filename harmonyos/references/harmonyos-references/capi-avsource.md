@@ -1,0 +1,34 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-references/capi-avsource
+title: AVSource
+breadcrumb: API参考 > 媒体 > AVCodec Kit（音视频编解码服务） > C API > 模块 > AVSource
+category: harmonyos-references
+scraped_at: 2026-09-02T14:52:46+08:00
+doc_updated_at: 2026-08-29
+content_hash: sha256:6f95c51c43c8fe46b1e44866e6c1f9e2d8578aa00fd44f27ae8f2cac81bc6252
+---
+
+## 概述
+
+AVSource模块提供用于构造媒体资源对象功能的函数。开发者通过本模块可以根据URI、文件描述符或自定义数据源创建媒体源实例，获取媒体文件的基础信息和轨道信息，为后续解封装操作提供数据源。
+
+本模块提供的主要能力包括：
+
+* **媒体源创建与销毁**：根据URI、文件描述符或用户自定义数据源创建媒体源实例，销毁媒体源实例释放资源。
+* **文件基础信息获取**：获取媒体资源文件的基础信息，包括文件时长、轨道数量、经纬度信息等。
+* **轨道信息获取**：获取指定轨道的基础信息，包括轨道类型、编码格式、分辨率、帧率、采样率、声道数等。
+* **自定义元数据获取**：获取媒体文件中的自定义元数据信息。
+
+适用场景包括：媒体播放器开发、视频编辑、音视频数据分析、媒体文件解析等需要访问媒体文件元数据和轨道信息的场景。
+
+本模块通常作为媒体处理流程的入口，与AVDemuxer模块配合使用：先通过AVSource创建媒体源并获取轨道信息，再通过AVDemuxer进行解封装读取压缩数据。
+
+**系统能力：** SystemCapability.Multimedia.Media.Spliter
+
+**起始版本：** 10
+
+## 文件汇总
+
+| 名称 | 描述 |
+| --- | --- |
+| [native\_avsource.h](capi-native-avsource-h.md) | 声明用于音视频媒体数据解析的接口。 |

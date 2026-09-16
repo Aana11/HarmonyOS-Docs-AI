@@ -1,0 +1,11 @@
+---
+url: https://developer.huawei.com/consumer/cn/doc/harmonyos-references/app-linking-api
+title: App Linking Kit（应用链接服务）
+breadcrumb: API参考 > 应用服务 > App Linking Kit（应用链接服务）
+category: harmonyos-references
+scraped_at: 2026-09-15T07:08:46+08:00
+doc_updated_at: 2026-09-14
+content_hash: sha256:07ae704c00ae95457bd78ab817b861c621a4529aa078d2344914e00b35ca5612
+---
+
+* **[ArkTS API](applinking-arkts-api.md)**

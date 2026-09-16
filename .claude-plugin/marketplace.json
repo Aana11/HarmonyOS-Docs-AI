@@ -1,0 +1,19 @@
+{
+  "name": "harmonyos-skills-dev",
+  "description": "Local marketplace for harmonyos-skills",
+  "owner": {
+    "name": "liasica",
+    "email": "magicrolan@qq.com"
+  },
+  "plugins": [
+    {
+      "name": "harmonyos-skills",
+      "description": "HarmonyOS NEXT offline reference library for AI coding assistants",
+      "source": "./",
+      "author": {
+        "name": "liasica",
+        "email": "magicrolan@qq.com"
+      }
+    }
+  ]
+}
