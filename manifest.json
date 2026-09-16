@@ -12,7 +12,7 @@
     "每篇文档frontmatter保留官方URL、标题、面包屑、更新时间和内容哈希。",
     "图片保留远程URL；华为CDN签名会过期，因此不承诺图片永久可离线访问。"
   ],
-  "last_local_index_rebuild_at": "2026-09-16T08:48:06+08:00",
+  "last_local_index_rebuild_at": "2026-09-17T06:55:07+08:00",
   "document_count": 16817,
   "faq_count": 4595,
   "categories": {
@@ -24,12 +24,12 @@
     "harmonyos-roadmap": 13
   },
   "category_source_bytes": {
-    "best-practices": 7508616,
-    "harmonyos-faqs": 21541682,
-    "harmonyos-guides": 39029264,
-    "harmonyos-references": 66622843,
-    "harmonyos-releases": 13943666,
-    "harmonyos-roadmap": 56623
+    "best-practices": 7368650,
+    "harmonyos-faqs": 21053197,
+    "harmonyos-guides": 38168556,
+    "harmonyos-references": 65038836,
+    "harmonyos-releases": 13846287,
+    "harmonyos-roadmap": 56196
   },
   "requested_document_present": true,
   "requested_document": {
